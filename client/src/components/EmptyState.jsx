@@ -10,8 +10,8 @@ function EmptyState({ onUploadClick, onDownloadSample }) {
         Your dashboard will appear here
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
-        Start with a CSV export from your exchange. The app will validate the file, match trades using FIFO, calculate
-        deductions and taxes, then build a full analytics dashboard with polished insights, tables, and chart views.
+        Start with a spot trade CSV export from your exchange. The app will validate the file, match trades using FIFO,
+        calculate deductions and taxes, then build a full analytics dashboard with polished insights, tables, and chart views.
       </p>
       <div className="mt-7 flex flex-wrap justify-center gap-3">
         <button

@@ -13,9 +13,9 @@ import { formatCurrency } from '../utils/formatters';
 
 const CSV_EXPORT_MODE = {
   title: 'CSV export',
-  description: 'One spreadsheet-ready file with summary totals, realized trades, and current open positions.',
+  description: 'One spreadsheet-ready file with summary totals, realized spot trades, and current open holdings.',
   buttonLabel: 'Download CSV',
-  includes: ['Summary totals', 'Realized trades', 'Open positions']
+  includes: ['Summary totals', 'Realized spot trades', 'Open holdings']
 };
 
 function ExportSummaryStat({ label, value, helper }) {
@@ -206,7 +206,7 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                         <ExportSummaryStat
                           label="CSV Scope"
                           value={hasReport ? 'Realized + Open' : 'Locked'}
-                          helper={hasReport ? `${holdingsCount} open positions included` : 'No report available'}
+                          helper={hasReport ? `${holdingsCount} open holdings included` : 'No report available'}
                         />
                       </div>
                     </div>
@@ -223,7 +223,7 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                         <div>
                           <p className="font-semibold text-slate-900 dark:text-white">Export note</p>
                           <p className="mt-1">
-                            CSV is the only export format now. Charts and visual analysis stay inside the live dashboard, while the download focuses on clean raw data.
+                            CSV is the only export format now. Charts and visual analysis stay inside the live dashboard, while the download focuses on clean spot-trade data.
                           </p>
                         </div>
                       </div>

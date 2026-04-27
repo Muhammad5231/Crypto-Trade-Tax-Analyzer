@@ -373,7 +373,7 @@ function MobileOnboarding({ onUploadClick, onDownloadSample, processing, sourceF
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-mint-300' : 'text-mint-700'}`}>Quick Import</p>
                 <p className="mt-2 font-display text-2xl font-bold">Upload and review in one flow</p>
                 <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  Bring in trade history, inspect matched cycles, and move through analytics in a cleaner mobile layout.
+                  Bring in spot trade history, inspect matched cycles, and move through analytics in a cleaner mobile layout.
                 </p>
               </div>
               <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isDark ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'}`}>
@@ -421,9 +421,9 @@ function MobileOnboarding({ onUploadClick, onDownloadSample, processing, sourceF
             <div className="ambient-surface rounded-[24px] p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">How it works</p>
               <div className="mt-3 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <p>1. Upload exchange trade history.</p>
+                <p>1. Upload spot exchange trade history.</p>
                 <p>2. Process FIFO matches safely.</p>
-                <p>3. Review taxes, warnings, and open lots.</p>
+                <p>3. Review taxes, warnings, and open holdings.</p>
               </div>
             </div>
             <div className="ambient-surface rounded-[24px] p-4">
@@ -534,12 +534,12 @@ function MobileDashboardView({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1 pr-2">
                 <h1 className="font-display text-[30px] font-bold leading-none">
-                  {hasReport ? 'Crypto tax review' : 'Import your trade history'}
+                  {hasReport ? 'Crypto tax review' : 'Import your spot trade history'}
                 </h1>
                 <p className={`mt-3 max-w-xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                   {hasReport
-                    ? 'A compact review surface for uploads, realized trades, open lots, and analytics.'
-                    : 'Upload exchange CSVs, match trades with FIFO logic, and review taxes in a cleaner mobile flow.'}
+                    ? 'A compact review surface for spot uploads, realized trades, open holdings, and analytics.'
+                    : 'Upload spot exchange CSVs, match trades with FIFO logic, and review taxes in a cleaner mobile flow.'}
                 </p>
               </div>
 
@@ -596,7 +596,7 @@ function MobileDashboardView({
                 {stats?.realizedTradesCount || 0} realized
               </MobileInlineChip>
               <MobileInlineChip icon={WalletCards} inverted={isDark}>
-                {stats?.openPositionsCount || 0} open lots
+                {stats?.openPositionsCount || 0} open holdings
               </MobileInlineChip>
               <MobileInlineChip icon={CircleAlert} tone={warnings.length ? 'warning' : 'neutral'} inverted={isDark}>
                 {warnings.length} warnings
@@ -675,7 +675,7 @@ function MobileDashboardView({
                         {stats?.realizedTradesCount || 0} realized cycles
                       </MobileInlineChip>
                       <MobileInlineChip icon={WalletCards} inverted={isDark}>
-                        {stats?.openPositionsCount || 0} open lots
+                        {stats?.openPositionsCount || 0} open holdings
                       </MobileInlineChip>
                     </div>
                   </div>
@@ -738,7 +738,7 @@ function MobileDashboardView({
                   <FilterBar
                     search={tradeSearch}
                     onSearchChange={onTradeSearchChange}
-                    searchPlaceholder="Search contract or date"
+                    searchPlaceholder="Search pair or date"
                     contract={selectedTradeContract}
                     onContractChange={onSelectedTradeContractChange}
                     contracts={contracts}
@@ -802,7 +802,7 @@ function MobileDashboardView({
               <MobileSectionCard
                 eyebrow="Holdings"
                 title="Open lot tracker"
-                description={`${filteredOpenPositions.length} remaining lot${filteredOpenPositions.length === 1 ? '' : 's'} still unmatched.`}
+                description={`${filteredOpenPositions.length} remaining holding lot${filteredOpenPositions.length === 1 ? '' : 's'} still unmatched.`}
                 action={
                   <button
                     type="button"
@@ -821,7 +821,7 @@ function MobileDashboardView({
                   <FilterBar
                     search={openSearch}
                     onSearchChange={onOpenSearchChange}
-                    searchPlaceholder="Search contract or buy date"
+                    searchPlaceholder="Search pair or buy date"
                     contract={selectedOpenContract}
                     onContractChange={onSelectedOpenContractChange}
                     contracts={contracts}
@@ -856,8 +856,8 @@ function MobileDashboardView({
               ) : (
                 <StatusBanner
                   tone="info"
-                  title="No open positions for this filter"
-                  description="All buys may already be matched, or the contract search has narrowed the list."
+                  title="No open holdings for this filter"
+                  description="All buys may already be matched, or the pair search has narrowed the list."
                 />
               )}
 

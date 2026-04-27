@@ -25,8 +25,8 @@ function AppHeader({
               Crypto Trade Tax Analyzer
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-              Upload exchange CSV files, match trades with FIFO logic, calculate taxes and deductions, inspect open
-              holdings, and review a polished analytics workspace built for serious trade analysis.
+              Upload spot exchange CSV files, match buys and sells with FIFO logic, calculate taxes and deductions,
+              inspect open holdings, and review a polished analytics workspace built for serious spot traders.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -39,7 +39,7 @@ function AppHeader({
               <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{stats?.realizedTradesCount || 0}</p>
             </div>
             <div className="ambient-surface rounded-[22px] px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Open Positions</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Open Holdings</p>
               <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{stats?.openPositionsCount || 0}</p>
             </div>
             {(sourceFile || processedAt) ? (

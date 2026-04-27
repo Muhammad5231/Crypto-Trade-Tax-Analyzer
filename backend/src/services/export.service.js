@@ -67,7 +67,7 @@ function buildCsvBundle(report) {
   const summary = report.summary || {};
   const meta = report.meta || {};
 
-  rows.push(buildCsvRow(['Crypto Trade Tax Analyzer - CSV Export']));
+  rows.push(buildCsvRow(['Crypto Trade Tax Analyzer - Spot CSV Export']));
   rows.push(buildCsvRow(['Export Format', 'CSV']));
   rows.push(buildCsvRow(['Generated On', new Date().toISOString()]));
   rows.push(buildCsvRow(['Processed On', meta.processedAt || 'N/A']));
@@ -90,7 +90,7 @@ function buildCsvBundle(report) {
   rows.push(buildCsvRow(['REALIZED TRADES']));
   rows.push(
     buildCsvRow([
-      'Contract',
+      'Pair',
       'Buy Date',
       'Sell Date',
       'Qty',
@@ -125,8 +125,8 @@ function buildCsvBundle(report) {
   }
 
   rows.push('');
-  rows.push(buildCsvRow(['OPEN POSITIONS']));
-  rows.push(buildCsvRow(['Contract', 'Buy Date', 'Unsold Qty', 'Avg Buy Price (INR)', 'Invested Capital (INR)']));
+  rows.push(buildCsvRow(['OPEN HOLDINGS']));
+  rows.push(buildCsvRow(['Pair', 'Buy Date', 'Unsold Qty', 'Avg Buy Price (INR)', 'Invested Capital (INR)']));
 
   for (const position of report.openPositions || []) {
     rows.push(

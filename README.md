@@ -1,30 +1,30 @@
 # Crypto Trade Tax Analyzer
 
-A full-stack web application for uploading exchange CSV files, matching trades with FIFO logic, analyzing realized profit and tax drag, reviewing open positions, and exporting the active session as a clean CSV report.
+A full-stack web application for spot crypto traders who want to upload spot exchange CSV files, match trades with FIFO logic, analyze realized profit and tax drag, review open holdings, and export the active session as a clean CSV report.
 
-The project is designed as a finance-first dashboard, with separate desktop and mobile experiences, validation-safe CSV ingestion, and a premium dark/light UI built around fast review rather than raw spreadsheets.
+The project is designed as a finance-first dashboard for spot-market activity, with separate desktop and mobile experiences, validation-safe CSV ingestion, and a premium dark/light UI built around fast review rather than raw spreadsheets.
 
 ## What This Website Does
 
-`Crypto Trade Tax Analyzer` helps you:
+`Crypto Trade Tax Analyzer` helps spot traders:
 
-- upload exchange trade-history CSV files
+- upload spot exchange trade-history CSV files
 - parse and validate trade rows safely
-- match buys and sells contract-wise using FIFO
+- match buys and sells pair-wise using FIFO
 - calculate realized P&L and tax deductions
-- detect open positions from unmatched buy lots
+- detect open holdings from unmatched buy lots
 - surface warnings without breaking the full report
 - inspect analytics charts and summary cards
 - export the current processed session to CSV
 
 ## Core Features
 
-- FIFO trade matching by contract
+- FIFO trade matching by spot pair
 - realized trade table with filters, sorting, totals, and pagination
-- open positions table for unmatched lots
+- open holdings table for unmatched lots
 - KPI summary for buy value, sell value, profit, tax, and final net
-- analytics charts for asset profitability, tax breakdown, monthly trend, and holding distribution
-- CSV export containing metadata, summary, realized trades, and open positions
+- analytics charts for pair profitability, tax breakdown, monthly trend, and holding distribution
+- CSV export containing metadata, summary, realized trades, and open holdings
 - safe warning handling for malformed rows and unmatched sell quantities
 - responsive desktop and mobile UI with dedicated mobile tab flow
 - fintech-style animated background that stays subtle behind the data
@@ -33,8 +33,8 @@ The project is designed as a finance-first dashboard, with separate desktop and 
 
 1. Upload a CSV file from the dashboard.
 2. The backend parses and normalizes the file.
-3. Trades are grouped by contract and matched using FIFO.
-4. Summary totals, realized trades, open positions, analytics, and warnings are generated.
+3. Trades are grouped by spot pair and matched using FIFO.
+4. Summary totals, realized trades, open holdings, analytics, and warnings are generated.
 5. The frontend renders the report for desktop and mobile review.
 6. The user can export the current processed session as a CSV file.
 
@@ -88,7 +88,7 @@ Time,Contract,Qty,Side,Exec.Price
 
 ## Validation and Warning Behavior
 
-The app is intentionally tolerant of imperfect exchange exports.
+The app is intentionally tolerant of imperfect spot-exchange exports.
 
 - malformed rows are skipped safely
 - cancelled or non-executed rows are ignored
@@ -108,11 +108,11 @@ Each exported file includes:
 - report metadata
 - summary totals
 - realized trades
-- open positions
+- open holdings
 
 ### Export filename
 
-- `crypto-trade-tax-analyzer-report.csv`
+- `crypto-trade-tax-analyzer-spot-report.csv`
 
 ### Notes
 
@@ -290,6 +290,22 @@ Optional:
 - desktop keeps dense tables and wider analytics panels for faster scanning
 - dark and light themes are both supported
 
+## Best Fit
+
+This version of the product is best suited for:
+
+- spot crypto traders
+- manual CSV-based tax review
+- FIFO gain/loss analysis
+- quick audit-friendly export workflows
+
+This version is not specifically tailored for:
+
+- futures or leverage trading
+- options workflows
+- broker API sync
+- portfolio management across multiple live accounts
+
 ## Testing and Verification
 
 Run backend tests:
@@ -350,14 +366,14 @@ git commit -m "Initial commit"
 
 ## Recommended GitHub Repo Description
 
-`A full-stack crypto trade tax analyzer with FIFO matching, tax analytics, warning-safe CSV processing, responsive dashboard UI, and CSV export.`
+`A full-stack crypto tax analyzer for spot traders with FIFO matching, tax analytics, warning-safe CSV processing, responsive dashboard UI, and CSV export.`
 
 ## Current Scope
 
 Included now:
 
 - CSV upload
-- FIFO analysis
+- FIFO analysis for spot trades
 - tax dashboard
 - warnings
 - analytics
@@ -382,4 +398,24 @@ Not included now:
 
 ---
 
-Built for practical crypto trade review, tax visibility, and cleaner audit-friendly reporting from raw exchange CSVs.
+## How To Update GitHub After Future Changes
+
+Whenever you make small updates later, use this flow:
+
+```powershell
+git status
+git add .
+git commit -m "Describe your update"
+git push origin main
+```
+
+If you only changed a few files and want more control:
+
+```powershell
+git status
+git add README.md client/src/components/AppHeader.jsx
+git commit -m "Refine spot trader messaging"
+git push origin main
+```
+
+Built for practical spot crypto trade review, tax visibility, and cleaner audit-friendly reporting from raw exchange CSVs.

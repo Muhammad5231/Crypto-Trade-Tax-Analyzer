@@ -259,7 +259,7 @@ export async function exportReportCsv(report) {
     return await downloadBinaryExport(
       '/export/csv',
       buildCsvExportPayload(report),
-      'crypto-trade-tax-report.csv',
+      'crypto-trade-tax-analyzer-spot-report.csv',
       'text/csv;charset=utf-8'
     );
   } catch (error) {

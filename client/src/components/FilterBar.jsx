@@ -43,7 +43,7 @@ function FilterBar({
           onChange={(event) => onContractChange(event.target.value)}
           className="ambient-input w-full rounded-2xl px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-mint-500 dark:text-slate-100"
         >
-          <option value="ALL">All contracts</option>
+          <option value="ALL">All pairs</option>
           {contracts.map((item) => (
             <option key={item} value={item}>
               {item}

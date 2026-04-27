@@ -38,7 +38,7 @@ function getSampleFormat(req, res) {
 }
 
 function buildExportFilename(extension) {
-  return `crypto-trade-tax-analyzer-report.${extension}`;
+  return `crypto-trade-tax-analyzer-spot-report.${extension}`;
 }
 
 function getExportPayload(req) {

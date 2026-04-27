@@ -13,10 +13,10 @@ test('generateCsvBuffer returns a combined CSV export payload', async () => {
   const csvBuffer = await generateCsvBuffer(report);
   const csvText = csvBuffer.toString('utf8');
 
-  assert.match(csvText, /Crypto Trade Tax Analyzer - CSV Export/);
+  assert.match(csvText, /Crypto Trade Tax Analyzer - Spot CSV Export/);
   assert.match(csvText, /SUMMARY/);
   assert.match(csvText, /REALIZED TRADES/);
-  assert.match(csvText, /Contract,Buy Date,Sell Date,Qty/);
+  assert.match(csvText, /Pair,Buy Date,Sell Date,Qty/);
   assert.match(csvText, /BTCUSDT/);
 });
 
@@ -40,11 +40,11 @@ test('POST /api/export/csv returns a valid CSV payload over HTTP', async () => {
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-type') || '', /text\/csv/);
     assert.ok(Number(response.headers.get('content-length') || 0) > 100);
-    assert.match(response.headers.get('content-disposition') || '', /crypto-trade-tax-analyzer-report\.csv/);
+    assert.match(response.headers.get('content-disposition') || '', /crypto-trade-tax-analyzer-spot-report\.csv/);
 
     const payload = Buffer.from(await response.arrayBuffer()).toString('utf8');
     assert.match(payload, /REALIZED TRADES/);
-    assert.match(payload, /OPEN POSITIONS/);
+    assert.match(payload, /OPEN HOLDINGS/);
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {

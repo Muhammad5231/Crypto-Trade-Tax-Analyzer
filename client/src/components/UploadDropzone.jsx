@@ -50,8 +50,8 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
 
           <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Drop your CSV here</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Supported columns: <span className="font-semibold">Time, Contract, Qty, Side, Exec.Price</span>. Additional
-            fields like fees or order value are safely accepted too.
+            Supported columns: <span className="font-semibold">Time, Contract, Qty, Side, Exec.Price</span>. Use your
+            spot trade export, and extra fields like fees or order value will be accepted safely too.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -96,7 +96,7 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
               <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 <p>1. Validate CSV structure and safely skip malformed rows.</p>
                 <p>2. Parse timestamps, quantities, and prices with finance-safe handling.</p>
-                <p>3. Match buy and sell lots using FIFO for realized P&amp;L.</p>
+                <p>3. Match spot buys and sells using FIFO for realized P&amp;L.</p>
                 <p>4. Calculate fees, GST, TDS, 30% tax, and final credit-adjusted profit.</p>
               </div>
             </div>
@@ -108,8 +108,8 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
                 <FileWarning className="h-5 w-5" />
               </div>
               <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                <p className="font-semibold text-slate-900 dark:text-white">Best results with exchange export CSVs</p>
-                <p>Use standard trade history files with one executed order per row and timestamps in chronological order.</p>
+                <p className="font-semibold text-slate-900 dark:text-white">Best results with spot exchange export CSVs</p>
+                <p>Use standard spot trade history files with one executed order per row and timestamps in chronological order.</p>
                 <p>Large files are supported with sticky tables, pagination, and analytics summaries.</p>
               </div>
             </div>

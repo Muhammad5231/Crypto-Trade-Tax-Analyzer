@@ -185,7 +185,7 @@ function DashboardPage() {
 
       pushToast(
         'Processing complete',
-        `${nextReport.meta.validTrades} trades analyzed across ${nextReport.meta.contractCount} contracts.`
+        `${nextReport.meta.validTrades} trades analyzed across ${nextReport.meta.contractCount} spot pairs.`
       );
 
       if (nextReport.warnings?.length) {
@@ -400,7 +400,7 @@ function DashboardPage() {
           title: 'Top Asset',
           description: topAsset
             ? `${topAsset.contract} is contributing the strongest final net performance.`
-            : 'Upload data to reveal the strongest contract.',
+            : 'Upload data to reveal the strongest spot pair.',
           value: topAsset ? `${topAsset.contract} - ${formatCurrency(topAsset.finalNetProfit)}` : 'No realized data',
           tone: topAsset?.finalNetProfit >= 0 ? 'positive' : 'neutral'
         },
@@ -432,7 +432,7 @@ function DashboardPage() {
   const tradeColumns = [
     {
       key: 'contract',
-      label: 'Contract',
+      label: 'Pair',
       render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.contract}</span>,
       initialDirection: 'asc',
       footer: (row) => row.label
@@ -527,7 +527,7 @@ function DashboardPage() {
   const openColumns = [
     {
       key: 'contract',
-      label: 'Contract',
+      label: 'Pair',
       render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.contract}</span>,
       initialDirection: 'asc',
       footer: (row) => row.label
@@ -902,7 +902,7 @@ function DashboardPage() {
                               isDarkTheme ? 'bg-white/10' : 'border border-slate-200/70 bg-white/80 shadow-[0_10px_24px_rgba(148,163,184,0.08)]'
                             }`}
                           >
-                            {stats?.openPositionsCount || 0} open lots
+                            {stats?.openPositionsCount || 0} open holdings
                           </span>
                           <span
                             className={`rounded-full px-3 py-2 ${
@@ -964,8 +964,8 @@ function DashboardPage() {
                       />
                       <SnapshotFeatureCard
                         eyebrow="Open Exposure"
-                        title="Largest Open Lot"
-                        description={largestOpenPosition ? 'Highest capital still locked in open positions.' : 'No open positions pending.'}
+                        title="Largest Open Holding"
+                        description={largestOpenPosition ? 'Highest capital still locked in open spot holdings.' : 'No open holdings pending.'}
                         value={
                           largestOpenPosition
                             ? `${largestOpenPosition.contract} - ${formatCurrency(largestOpenPosition.totalInvested)}`
@@ -976,7 +976,7 @@ function DashboardPage() {
                       <SnapshotFeatureCard
                         eyebrow="Workspace"
                         title="CSV Export"
-                        description="Download the active session as one spreadsheet-ready file with realized trades and open positions."
+                        description="Download the active session as one spreadsheet-ready file with realized spot trades and open holdings."
                         value="Ready"
                         tone="accent"
                       />
@@ -988,7 +988,7 @@ function DashboardPage() {
 
                 <SectionCard
                   title="Realized Trades"
-                  description="Trade cycles matched with FIFO logic and fully expanded tax deductions."
+                  description="Spot trade cycles matched with FIFO logic and fully expanded tax deductions."
                   actions={
                     <span className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white dark:bg-white dark:text-slate-900">
                       {filteredTrades.length} rows
@@ -999,7 +999,7 @@ function DashboardPage() {
                     <FilterBar
                       search={tradeSearch}
                       onSearchChange={setTradeSearch}
-                      searchPlaceholder="Search contract or date"
+                      searchPlaceholder="Search pair or date"
                       contract={selectedTradeContract}
                       onContractChange={setSelectedTradeContract}
                       contracts={contracts}
@@ -1021,14 +1021,14 @@ function DashboardPage() {
                       defaultSortKey="sellDateTime"
                       defaultSortDirection="desc"
                       emptyTitle="No realized trades match this filter"
-                      emptyDescription="Try clearing search text, choosing a different contract, or widening the date range."
+                      emptyDescription="Try clearing search text, choosing a different pair, or widening the date range."
                     />
                   </div>
                 </SectionCard>
 
                 <SectionCard
-                  title="Open Positions"
-                  description="Remaining unmatched buys, shown as currently unsold holdings."
+                  title="Open Holdings"
+                  description="Remaining unmatched spot buys, shown as currently unsold holdings."
                   actions={
                     <span className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white dark:bg-white dark:text-slate-900">
                       {filteredOpenPositions.length} rows
@@ -1039,7 +1039,7 @@ function DashboardPage() {
                     <FilterBar
                       search={openSearch}
                       onSearchChange={setOpenSearch}
-                      searchPlaceholder="Search contract or buy date"
+                      searchPlaceholder="Search pair or buy date"
                       contract={selectedOpenContract}
                       onContractChange={setSelectedOpenContract}
                       contracts={contracts}
@@ -1057,8 +1057,8 @@ function DashboardPage() {
                       footerRow={openPositionTotals}
                       defaultSortKey="buyDateTime"
                       defaultSortDirection="asc"
-                      emptyTitle="No open positions available"
-                      emptyDescription="All matched buys were fully sold, or the current filters have hidden the remaining positions."
+                      emptyTitle="No open holdings available"
+                      emptyDescription="All matched buys were fully sold, or the current filters have hidden the remaining holdings."
                     />
                   </div>
                 </SectionCard>

@@ -62,9 +62,9 @@ function AnalyticsPanel({ analytics, compact = false }) {
     >
       <div className={`grid gap-5 ${compact ? 'lg:grid-cols-1' : 'xl:grid-cols-2'}`}>
         <div className="ambient-surface rounded-[24px] p-4">
-          <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Realized P&amp;L by Asset</h3>
+          <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Realized P&amp;L by Spot Pair</h3>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Final post-credit profit contribution by contract.
+            Final post-credit profit contribution by spot pair.
           </p>
           <div className={`mt-4 ${compact ? 'h-64' : 'h-80'}`}>
             {realizedPnlByAsset.length === 0 ? (
@@ -88,13 +88,13 @@ function AnalyticsPanel({ analytics, compact = false }) {
         </div>
 
         <div className="ambient-surface rounded-[24px] p-4">
-          <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Open Position Distribution</h3>
+          <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Open Holdings Distribution</h3>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Invested capital still locked in unmatched buy lots.
           </p>
           <div className={`mt-4 ${compact ? 'h-64' : 'h-80'}`}>
             {openPositionsDistribution.length === 0 ? (
-              <EmptyChart message="No open positions are currently pending." />
+              <EmptyChart message="No open spot holdings are currently pending." />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -143,11 +143,11 @@ function AnalyticsPanel({ analytics, compact = false }) {
         <div className="ambient-surface rounded-[24px] p-4">
           <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Monthly Final Net Trend</h3>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Trend line based on realized final net profit after tax credit.
+            Trend line based on realized spot-trade final net profit after tax credit.
           </p>
           <div className={`mt-4 ${compact ? 'h-64' : 'h-72'}`}>
             {monthlyPerformance.length === 0 ? (
-              <EmptyChart message="Monthly analytics will appear after processing trade history." />
+              <EmptyChart message="Monthly analytics will appear after processing spot trade history." />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyPerformance}>
