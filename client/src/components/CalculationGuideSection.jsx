@@ -44,21 +44,22 @@ function CalculationGuideSection({ compact = false }) {
   return (
     <section className="glass-panel overflow-hidden">
       <details className="group">
-        <summary className={`relative flex cursor-pointer list-none items-start justify-between gap-4 ${compact ? 'px-4 py-4' : 'px-5 py-5 sm:px-6'}`}>
+        <summary className={`relative cursor-pointer list-none ${compact ? 'px-4 py-4' : 'px-5 py-5 sm:px-6'}`}>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-mint-500/8 via-transparent to-sky-500/8" />
           <div className="relative min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-mint-600 dark:text-mint-300">Documentation</p>
-            <h2 className={`mt-1 font-display font-bold tracking-tight text-slate-900 dark:text-white ${compact ? 'text-xl' : 'text-2xl'}`}>
-              How this dashboard calculates
-            </h2>
+            <div className="absolute right-0 top-0 flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-600 transition group-open:border-mint-500/40 group-open:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:group-open:text-white">
+              <span>{compact ? 'Open' : 'Read guide'}</span>
+              <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+            </div>
+            <div className={compact ? 'pr-24' : 'pr-28'}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-mint-600 dark:text-mint-300">Documentation</p>
+              <h2 className={`mt-1 font-display font-bold tracking-tight text-slate-900 dark:text-white ${compact ? 'text-xl' : 'text-2xl'}`}>
+                How this dashboard calculates
+              </h2>
+            </div>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
               Easy-English notes for FIFO matching, saved exchange fees, GST on fees, and the India crypto spot-tax model used by this app as of April 28, 2026.
             </p>
-          </div>
-
-          <div className="relative flex shrink-0 items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-600 transition group-open:border-mint-500/40 group-open:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:group-open:text-white">
-            <span>{compact ? 'Open' : 'Read guide'}</span>
-            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
           </div>
         </summary>
 

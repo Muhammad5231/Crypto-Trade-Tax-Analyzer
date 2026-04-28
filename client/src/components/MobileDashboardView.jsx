@@ -213,15 +213,15 @@ function MobileSectionCard({ eyebrow, title, description, action, children, clas
     <section className={`glass-panel relative overflow-hidden p-4 ${className}`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-mint-500/8 via-transparent to-sky-500/8" />
       <div className="relative">
-        <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-200/70 pb-3 dark:border-white/10">
-          <div>
+        <div className="relative mb-3 border-b border-slate-200/70 pb-3 dark:border-white/10">
+          {action ? <div className="absolute right-0 top-0 z-[1]">{action}</div> : null}
+          <div className={action ? 'pr-24' : ''}>
             {eyebrow ? (
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{eyebrow}</p>
             ) : null}
             <h2 className="mt-1 font-display text-[1.15rem] font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
-            {description ? <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p> : null}
           </div>
-          {action}
+          {description ? <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p> : null}
         </div>
         {children}
       </div>
@@ -746,14 +746,14 @@ function MobileDashboardView({
                   <div className="pointer-events-none absolute -right-10 top-0 h-24 w-24 rounded-full bg-sky-500/18 blur-3xl" />
                   <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-mint-500/16 blur-3xl" />
                   <div className="relative">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                    <div className="relative">
+                      <div className="pr-14">
                         <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-mint-200' : 'text-mint-700'}`}>Session Readout</p>
-                        <p className={`mt-2 max-w-[14rem] text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                           Compare profit, taxes, and remaining exposure without losing readability.
                         </p>
                       </div>
-                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isDark ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                      <div className={`absolute right-0 top-0 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isDark ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'}`}>
                         <ShieldCheck className="h-5 w-5" />
                       </div>
                     </div>
