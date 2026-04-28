@@ -9,6 +9,7 @@ import ExportMenu from '../components/ExportMenu';
 import FilterBar from '../components/FilterBar';
 import MetricCard from '../components/MetricCard';
 import MobileDashboardView from '../components/MobileDashboardView';
+import ProfileSetupModal from '../components/ProfileSetupModal';
 import SectionCard from '../components/SectionCard';
 import SkeletonGrid from '../components/SkeletonGrid';
 import StatusBanner from '../components/StatusBanner';
@@ -19,55 +20,90 @@ import usePersistedState from '../hooks/usePersistedState';
 import { getSampleCsvUrl, processTradeFile } from '../services/api';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters';
 
-const DEFAULT_FEE_CONFIG = {
-  feeRatePercent: '0.1',
-  feeAppliesTo: 'sell'
+const DEFAULT_PROFILE = {
+  userName: '',
+  exchangeName: '',
+  buyFeePercent: '0',
+  sellFeePercent: '0.1'
 };
 
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function normalizeFeeConfig(rawConfig) {
-  const nextFeeAppliesTo = ['buy', 'sell', 'both'].includes(rawConfig?.feeAppliesTo)
-    ? rawConfig.feeAppliesTo
-    : DEFAULT_FEE_CONFIG.feeAppliesTo;
-  const rawFeeRatePercent = rawConfig?.feeRatePercent;
-  const parsedFeeRate = Number(rawFeeRatePercent);
+function normalizePercentValue(rawValue, fallbackValue) {
+  const parsedValue = Number(rawValue);
+
+  if (
+    rawValue === undefined ||
+    rawValue === null ||
+    String(rawValue).trim() === '' ||
+    !Number.isFinite(parsedValue) ||
+    parsedValue < 0
+  ) {
+    return fallbackValue;
+  }
+
+  return String(rawValue);
+}
+
+function normalizeFeeModel(rawModel) {
+  if (
+    rawModel?.buyFeePercent !== undefined ||
+    rawModel?.sellFeePercent !== undefined ||
+    rawModel?.userName !== undefined ||
+    rawModel?.exchangeName !== undefined
+  ) {
+    return {
+      userName: String(rawModel?.userName || '').trim(),
+      exchangeName: String(rawModel?.exchangeName || '').trim(),
+      buyFeePercent: normalizePercentValue(rawModel?.buyFeePercent, DEFAULT_PROFILE.buyFeePercent),
+      sellFeePercent: normalizePercentValue(rawModel?.sellFeePercent, DEFAULT_PROFILE.sellFeePercent)
+    };
+  }
+
+  const legacyFeeRate = normalizePercentValue(rawModel?.feeRatePercent, DEFAULT_PROFILE.sellFeePercent);
+  const legacyFeeSide = ['buy', 'sell', 'both'].includes(rawModel?.feeAppliesTo) ? rawModel.feeAppliesTo : 'sell';
 
   return {
-    feeRatePercent:
-      rawFeeRatePercent === undefined ||
-      rawFeeRatePercent === null ||
-      String(rawFeeRatePercent).trim() === '' ||
-      !Number.isFinite(parsedFeeRate) ||
-      parsedFeeRate < 0
-        ? DEFAULT_FEE_CONFIG.feeRatePercent
-        : String(rawFeeRatePercent),
-    feeAppliesTo: nextFeeAppliesTo
+    userName: '',
+    exchangeName: '',
+    buyFeePercent: legacyFeeSide === 'buy' || legacyFeeSide === 'both' ? legacyFeeRate : DEFAULT_PROFILE.buyFeePercent,
+    sellFeePercent: legacyFeeSide === 'sell' || legacyFeeSide === 'both' ? legacyFeeRate : DEFAULT_PROFILE.buyFeePercent
   };
+}
+
+function normalizeProfile(rawProfile) {
+  return normalizeFeeModel(rawProfile || {});
 }
 
 function formatFeeRatePercent(value) {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
-    return DEFAULT_FEE_CONFIG.feeRatePercent;
+    return DEFAULT_PROFILE.buyFeePercent;
   }
 
   return parsedValue.toFixed(4).replace(/\.?0+$/, '');
 }
 
-function getFeeApplicationLabel(feeAppliesTo) {
-  if (feeAppliesTo === 'buy') {
-    return 'buy value';
-  }
+function getFeeModelSummary(feeModel) {
+  return `Buy ${formatFeeRatePercent(feeModel.buyFeePercent)}% · Sell ${formatFeeRatePercent(feeModel.sellFeePercent)}%`;
+}
 
-  if (feeAppliesTo === 'both') {
-    return 'buy + sell value';
-  }
+function getProfileUploadPayload(profile) {
+  const normalizedProfile = normalizeProfile(profile);
 
-  return 'sell value';
+  return {
+    userName: normalizedProfile.userName,
+    exchangeName: normalizedProfile.exchangeName,
+    buyFeePercent: normalizedProfile.buyFeePercent,
+    sellFeePercent: normalizedProfile.sellFeePercent
+  };
+}
+
+function hasProfileDetails(profile) {
+  return Boolean(profile.userName && profile.exchangeName);
 }
 
 function normalizeReport(rawReport) {
@@ -78,7 +114,7 @@ function normalizeReport(rawReport) {
   const meta = {
     ...rawReport.meta,
     contracts: Array.isArray(rawReport.meta.contracts) ? rawReport.meta.contracts : [],
-    feeModel: normalizeFeeConfig(rawReport.meta.feeModel)
+    feeModel: normalizeFeeModel(rawReport.meta.feeModel)
   };
 
   const analytics = isPlainObject(rawReport.analytics)
@@ -121,6 +157,18 @@ function getDateSortValue(value) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function renderStackedDateTime(value) {
+  const formattedValue = formatDateTime(value);
+  const [datePart, timePart] = String(formattedValue).split(', ');
+
+  return (
+    <div className="min-w-[8.75rem]">
+      <div className="font-medium text-slate-900 dark:text-white">{datePart || formattedValue}</div>
+      {timePart ? <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{timePart}</div> : null}
+    </div>
+  );
+}
+
 function SnapshotFeatureCard({ eyebrow, title, value, description, tone = 'neutral' }) {
   const toneClasses = {
     positive: 'border-mint-500/20 bg-mint-500/10',
@@ -144,11 +192,13 @@ function DashboardPage() {
   const isMobile = useMediaQuery('(max-width: 1023px)');
   const [theme, setTheme] = usePersistedState('crypto-tax-theme', 'dark');
   const [report, setReport] = usePersistedState('crypto-tax-last-report', null);
-  const [storedFeeConfig, setStoredFeeConfig] = usePersistedState('crypto-tax-fee-model', DEFAULT_FEE_CONFIG);
+  const [storedProfile, setStoredProfile] = usePersistedState('crypto-tax-profile', DEFAULT_PROFILE);
   const [activeMobileTab, setActiveMobileTab] = usePersistedState('crypto-tax-mobile-tab', 'overview');
   const [currentFileName, setCurrentFileName] = useState('');
   const [lastUploadedFile, setLastUploadedFile] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileDraft, setProfileDraft] = useState(() => normalizeProfile(storedProfile));
   const [tradeSearch, setTradeSearch] = useState('');
   const [openSearch, setOpenSearch] = useState('');
   const [selectedTradeContract, setSelectedTradeContract] = useState('ALL');
@@ -185,23 +235,37 @@ function DashboardPage() {
   }, [openSearch, selectedOpenContract, report?.openPositions?.length]);
 
   const safeReport = useMemo(() => normalizeReport(report), [report]);
-  const feeConfig = useMemo(() => normalizeFeeConfig(storedFeeConfig), [storedFeeConfig]);
+  const profile = useMemo(() => normalizeProfile(storedProfile), [storedProfile]);
+  const hasSavedProfile = hasProfileDetails(profile);
   const isDarkTheme = theme === 'dark';
 
   useEffect(() => {
     if (
-      storedFeeConfig?.feeRatePercent !== feeConfig.feeRatePercent ||
-      storedFeeConfig?.feeAppliesTo !== feeConfig.feeAppliesTo
+      storedProfile?.userName !== profile.userName ||
+      storedProfile?.exchangeName !== profile.exchangeName ||
+      storedProfile?.buyFeePercent !== profile.buyFeePercent ||
+      storedProfile?.sellFeePercent !== profile.sellFeePercent
     ) {
-      setStoredFeeConfig(feeConfig);
+      setStoredProfile(profile);
     }
-  }, [feeConfig, setStoredFeeConfig, storedFeeConfig]);
+  }, [profile, setStoredProfile, storedProfile]);
+
+  useEffect(() => {
+    setProfileDraft(profile);
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasSavedProfile) {
+      setProfileModalOpen(true);
+    }
+  }, [hasSavedProfile]);
 
   useEffect(() => {
     if (report && !safeReport) {
       setReport(null);
       setCurrentFileName('');
       setLastUploadedFile(null);
+      setProfileModalOpen(true);
     }
   }, [report, safeReport, setReport]);
 
@@ -217,7 +281,14 @@ function DashboardPage() {
     ]);
   }
 
-  async function processSelectedFile(file) {
+  function handleProfileDraftChange(field, value) {
+    setProfileDraft((currentValue) => ({
+      ...currentValue,
+      [field]: value
+    }));
+  }
+
+  async function processSelectedFile(file, activeProfile = profile) {
     if (!file) {
       return;
     }
@@ -226,7 +297,7 @@ function DashboardPage() {
     setCurrentFileName(file.name);
 
     try {
-      const nextReport = await processTradeFile(file, feeConfig);
+      const nextReport = await processTradeFile(file, getProfileUploadPayload(activeProfile));
 
       nextReport.meta = {
         ...nextReport.meta,
@@ -265,6 +336,12 @@ function DashboardPage() {
       return;
     }
 
+    if (!hasSavedProfile) {
+      setProfileModalOpen(true);
+      pushToast('Profile required', 'Save your trader profile before processing spot trades.', 'warning');
+      return;
+    }
+
     setLastUploadedFile(file);
     await processSelectedFile(file);
   }
@@ -275,6 +352,43 @@ function DashboardPage() {
     }
 
     await processSelectedFile(lastUploadedFile);
+  }
+
+  async function saveProfile() {
+    const nextProfile = normalizeProfile(profileDraft);
+
+    if (!nextProfile.userName) {
+      pushToast('User name required', 'Please add a user name to continue.', 'warning');
+      return;
+    }
+
+    if (!nextProfile.exchangeName) {
+      pushToast('Exchange name required', 'Please add the spot exchange name to continue.', 'warning');
+      return;
+    }
+
+    const feeChanged =
+      nextProfile.buyFeePercent !== profile.buyFeePercent || nextProfile.sellFeePercent !== profile.sellFeePercent;
+
+    setStoredProfile(nextProfile);
+    setProfileModalOpen(false);
+    pushToast(
+      'Profile saved',
+      `${nextProfile.userName} on ${nextProfile.exchangeName} is now the active spot-trading profile.`
+    );
+
+    if (lastUploadedFile && feeChanged) {
+      await processSelectedFile(lastUploadedFile, nextProfile);
+      return;
+    }
+
+    if (safeReport && feeChanged) {
+      pushToast(
+        'Re-upload needed',
+        'The saved profile changed your fee model. Re-upload the CSV to refresh calculations in this restored session.',
+        'warning'
+      );
+    }
   }
 
   function downloadSample() {
@@ -289,7 +403,18 @@ function DashboardPage() {
     pushToast('Workspace cleared', 'The locally stored processed report has been removed.');
   }
 
+  function openProfileModal() {
+    setProfileDraft(profile);
+    setProfileModalOpen(true);
+  }
+
   function triggerUpload() {
+    if (!hasSavedProfile) {
+      openProfileModal();
+      pushToast('Profile required', 'Save your trader profile before uploading a CSV.', 'warning');
+      return;
+    }
+
     const targetId = isMobile ? 'mobile-upload-panel' : 'upload-panel';
     document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     window.setTimeout(() => inputRef.current?.click(), 180);
@@ -355,10 +480,10 @@ function DashboardPage() {
     ? (summary.totalFeesPaid || 0) + (summary.totalGstOnFees || 0) + (summary.totalTdsDeducted || 0) + (summary.totalCryptoTax || 0)
     : 0;
   const activeSourceFile = currentFileName || safeReport?.meta?.sourceFile || 'No source attached';
-  const appliedFeeModel = safeReport?.meta?.feeModel || feeConfig;
-  const feeModelHelper = `${formatFeeRatePercent(appliedFeeModel.feeRatePercent)}% on ${getFeeApplicationLabel(
-    appliedFeeModel.feeAppliesTo
-  )}`;
+  const appliedFeeModel = safeReport?.meta?.feeModel || profile;
+  const feeModelHelper = `${appliedFeeModel.exchangeName || 'Exchange profile'} · ${getFeeModelSummary(appliedFeeModel)}`;
+  const showBuyFeeColumn = Number(appliedFeeModel.buyFeePercent || 0) > 0;
+  const showSellFeeColumn = Number(appliedFeeModel.sellFeePercent || 0) > 0;
   const snapshotComparisonBase = Math.max(
     Math.abs(summary?.finalNetProfit || 0),
     Math.abs(summary?.grossProfit || 0),
@@ -518,19 +643,22 @@ function DashboardPage() {
       label: 'Pair',
       render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.contract}</span>,
       initialDirection: 'asc',
+      cellClassName: 'min-w-[7rem]',
       footer: (row) => row.label
     },
     {
       key: 'sellDateTime',
       label: 'Sell Date',
       sortAccessor: (row) => getDateSortValue(row.sellDateTime),
-      render: (row) => formatDateTime(row.sellDateTime)
+      render: (row) => renderStackedDateTime(row.sellDateTime),
+      cellClassName: 'min-w-[10rem]'
     },
     {
       key: 'buyDateTime',
       label: 'Buy Date',
       sortAccessor: (row) => getDateSortValue(row.buyDateTime),
-      render: (row) => formatDateTime(row.buyDateTime)
+      render: (row) => renderStackedDateTime(row.buyDateTime),
+      cellClassName: 'min-w-[10rem]'
     },
     {
       key: 'matchedQty',
@@ -564,9 +692,31 @@ function DashboardPage() {
       footerClassName: (row) =>
         row.grossProfit >= 0 ? 'text-mint-700 dark:text-mint-300' : 'text-coral-700 dark:text-coral-300'
     },
+    ...(showBuyFeeColumn
+      ? [
+          {
+            key: 'buySideFee',
+            label: 'Buy Fee',
+            align: 'right',
+            render: (row) => formatCurrency(row.buySideFee),
+            footer: (row) => formatCurrency(row.buySideFee)
+          }
+        ]
+      : []),
+    ...(showSellFeeColumn
+      ? [
+          {
+            key: 'sellSideFee',
+            label: 'Sell Fee',
+            align: 'right',
+            render: (row) => formatCurrency(row.sellSideFee),
+            footer: (row) => formatCurrency(row.sellSideFee)
+          }
+        ]
+      : []),
     {
       key: 'fees',
-      label: 'Fees',
+      label: showBuyFeeColumn || showSellFeeColumn ? 'Total Fees' : 'Fees',
       align: 'right',
       render: (row) => formatCurrency(row.fees),
       footer: (row) => formatCurrency(row.fees)
@@ -618,8 +768,9 @@ function DashboardPage() {
     {
       key: 'buyDateTime',
       label: 'Buy Date',
-      render: (row) => formatDateTime(row.buyDateTime),
-      sortAccessor: (row) => getDateSortValue(row.buyDateTime)
+      render: (row) => renderStackedDateTime(row.buyDateTime),
+      sortAccessor: (row) => getDateSortValue(row.buyDateTime),
+      cellClassName: 'min-w-[10rem]'
     },
     {
       key: 'unsoldQty',
@@ -656,6 +807,8 @@ function DashboardPage() {
         buyValue: accumulator.buyValue + trade.buyValue,
         sellValue: accumulator.sellValue + trade.sellValue,
         grossProfit: accumulator.grossProfit + trade.grossProfit,
+        buySideFee: accumulator.buySideFee + (trade.buySideFee || 0),
+        sellSideFee: accumulator.sellSideFee + (trade.sellSideFee || 0),
         fees: accumulator.fees + trade.fees,
         gstOnFees: accumulator.gstOnFees + trade.gstOnFees,
         tds: accumulator.tds + trade.tds,
@@ -668,6 +821,8 @@ function DashboardPage() {
         buyValue: 0,
         sellValue: 0,
         grossProfit: 0,
+        buySideFee: 0,
+        sellSideFee: 0,
         fees: 0,
         gstOnFees: 0,
         tds: 0,
@@ -757,6 +912,15 @@ function DashboardPage() {
         onDismiss={(id) => setToasts((currentValue) => currentValue.filter((toast) => toast.id !== id))}
       />
 
+      <ProfileSetupModal
+        open={profileModalOpen}
+        canDismiss={hasSavedProfile}
+        profileDraft={profileDraft}
+        onProfileDraftChange={handleProfileDraftChange}
+        onSave={saveProfile}
+        onClose={() => setProfileModalOpen(false)}
+      />
+
       <input
         ref={inputRef}
         type="file"
@@ -775,6 +939,7 @@ function DashboardPage() {
           onToggleTheme={() => setTheme((currentValue) => (currentValue === 'dark' ? 'light' : 'dark'))}
           onUploadClick={triggerUpload}
           onDownloadSample={downloadSample}
+          onOpenProfile={openProfileModal}
           onRecalculateCurrentFile={lastUploadedFile ? recalculateCurrentFile : null}
           onClearReport={clearReport}
           report={safeReport}
@@ -782,15 +947,9 @@ function DashboardPage() {
           summary={summary}
           stats={stats}
           warnings={warnings}
+          profile={profile}
           sourceFile={currentFileName || safeReport?.meta?.sourceFile}
           processedAt={safeReport?.meta?.processedAt}
-          feeConfig={feeConfig}
-          onFeeRateChange={(value) =>
-            setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeRatePercent: value }))
-          }
-          onFeeAppliesToChange={(value) =>
-            setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeAppliesTo: value }))
-          }
           activeMobileTab={activeMobileTab}
           onActiveMobileTabChange={setActiveMobileTab}
           mobileMetricCards={mobileMetricCards}
@@ -848,17 +1007,12 @@ function DashboardPage() {
               inputRef={inputRef}
               onFileSelected={handleFileSelected}
               onDownloadSample={downloadSample}
+              onOpenProfile={openProfileModal}
               onRecalculate={lastUploadedFile ? recalculateCurrentFile : null}
               isProcessing={processing}
               currentFileName={currentFileName || safeReport?.meta?.sourceFile}
               stats={stats}
-              feeConfig={feeConfig}
-              onFeeRateChange={(value) =>
-                setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeRatePercent: value }))
-              }
-              onFeeAppliesToChange={(value) =>
-                setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeAppliesTo: value }))
-              }
+              profile={profile}
             />
 
             {processing ? <SkeletonGrid /> : null}
@@ -1119,6 +1273,7 @@ function DashboardPage() {
                       footerRow={realizedTotals}
                       defaultSortKey="sellDateTime"
                       defaultSortDirection="desc"
+                      minTableWidth="min-w-[1230px]"
                       emptyTitle="No realized trades match this filter"
                       emptyDescription="Try clearing search text, choosing a different pair, or widening the date range."
                     />
@@ -1156,6 +1311,7 @@ function DashboardPage() {
                       footerRow={openPositionTotals}
                       defaultSortKey="buyDateTime"
                       defaultSortDirection="asc"
+                      minTableWidth="min-w-[760px]"
                       emptyTitle="No open holdings available"
                       emptyDescription="All matched buys were fully sold, or the current filters have hidden the remaining holdings."
                     />

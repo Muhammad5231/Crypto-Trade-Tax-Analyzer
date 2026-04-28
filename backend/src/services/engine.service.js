@@ -9,14 +9,16 @@ Decimal.set({
 
 const EPSILON = new Decimal('0.00000001');
 const DEFAULT_SETTINGS = {
-  feeAppliesTo: 'sell',
-  feeRatePercent: new Decimal('0.1'),
-  feeRate: new Decimal('0.001'),
+  userName: '',
+  exchangeName: '',
+  buyFeePercent: new Decimal(0),
+  sellFeePercent: new Decimal('0.1'),
+  buyFeeRate: new Decimal(0),
+  sellFeeRate: new Decimal('0.001'),
   gstRate: new Decimal('0.18'),
   tdsRate: new Decimal('0.01'),
   taxRate: new Decimal('0.30')
 };
-const VALID_FEE_APPLICATIONS = new Set(['buy', 'sell', 'both']);
 
 const FIELD_ALIASES = {
   time: ['Time', 'time', 'Timestamp', 'timestamp', 'Date', 'date', 'DateTime'],
@@ -85,19 +87,51 @@ function determineSide(rawValue) {
 }
 
 function resolveSettings(rawSettings = {}) {
-  const feeAppliesTo = VALID_FEE_APPLICATIONS.has(rawSettings.feeAppliesTo)
-    ? rawSettings.feeAppliesTo
-    : DEFAULT_SETTINGS.feeAppliesTo;
-  const feeRatePercent =
-    rawSettings.feeRatePercent === undefined || rawSettings.feeRatePercent === null || rawSettings.feeRatePercent === ''
-      ? DEFAULT_SETTINGS.feeRatePercent
-      : parseNonNegativeDecimal(rawSettings.feeRatePercent, 'fee rate');
+  const normalizedUserName = String(rawSettings.userName || '').trim();
+  const normalizedExchangeName = String(rawSettings.exchangeName || '').trim();
+  let buyFeePercent = DEFAULT_SETTINGS.buyFeePercent;
+  let sellFeePercent = DEFAULT_SETTINGS.sellFeePercent;
+
+  if (
+    rawSettings.buyFeePercent !== undefined ||
+    rawSettings.sellFeePercent !== undefined ||
+    rawSettings.userName !== undefined ||
+    rawSettings.exchangeName !== undefined
+  ) {
+    buyFeePercent =
+      rawSettings.buyFeePercent === undefined || rawSettings.buyFeePercent === null || rawSettings.buyFeePercent === ''
+        ? DEFAULT_SETTINGS.buyFeePercent
+        : parseNonNegativeDecimal(rawSettings.buyFeePercent, 'buy fee rate');
+    sellFeePercent =
+      rawSettings.sellFeePercent === undefined || rawSettings.sellFeePercent === null || rawSettings.sellFeePercent === ''
+        ? DEFAULT_SETTINGS.sellFeePercent
+        : parseNonNegativeDecimal(rawSettings.sellFeePercent, 'sell fee rate');
+  } else {
+    const legacyFeeRatePercent =
+      rawSettings.feeRatePercent === undefined || rawSettings.feeRatePercent === null || rawSettings.feeRatePercent === ''
+        ? DEFAULT_SETTINGS.sellFeePercent
+        : parseNonNegativeDecimal(rawSettings.feeRatePercent, 'fee rate');
+    const legacyFeeSide = ['buy', 'sell', 'both'].includes(rawSettings.feeAppliesTo)
+      ? rawSettings.feeAppliesTo
+      : 'sell';
+
+    if (legacyFeeSide === 'buy' || legacyFeeSide === 'both') {
+      buyFeePercent = legacyFeeRatePercent;
+    }
+
+    if (legacyFeeSide === 'sell' || legacyFeeSide === 'both') {
+      sellFeePercent = legacyFeeRatePercent;
+    }
+  }
 
   return {
     ...DEFAULT_SETTINGS,
-    feeAppliesTo,
-    feeRatePercent,
-    feeRate: feeRatePercent.div(100)
+    userName: normalizedUserName,
+    exchangeName: normalizedExchangeName,
+    buyFeePercent,
+    sellFeePercent,
+    buyFeeRate: buyFeePercent.div(100),
+    sellFeeRate: sellFeePercent.div(100)
   };
 }
 
@@ -170,14 +204,8 @@ function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence, s
   const buyValue = matchedQty.mul(buyLot.execPrice);
   const sellValue = matchedQty.mul(sellTrade.execPrice);
   const grossProfit = sellValue.minus(buyValue);
-  const buySideFee =
-    settings.feeAppliesTo === 'buy' || settings.feeAppliesTo === 'both'
-      ? buyValue.mul(settings.feeRate)
-      : new Decimal(0);
-  const sellSideFee =
-    settings.feeAppliesTo === 'sell' || settings.feeAppliesTo === 'both'
-      ? sellValue.mul(settings.feeRate)
-      : new Decimal(0);
+  const buySideFee = buyValue.mul(settings.buyFeeRate);
+  const sellSideFee = sellValue.mul(settings.sellFeeRate);
   const fees = buySideFee.plus(sellSideFee);
   const gstOnFees = fees.mul(settings.gstRate);
   const tds = sellValue.mul(settings.tdsRate);
@@ -405,10 +433,7 @@ function processNormalizedTrades(trades, warnings = [], rawSettings = {}) {
       }
 
       const remainingBuyValue = buyLot.remainingQty.mul(buyLot.execPrice);
-      const openBuyFee =
-        settings.feeAppliesTo === 'buy' || settings.feeAppliesTo === 'both'
-          ? remainingBuyValue.mul(settings.feeRate)
-          : new Decimal(0);
+      const openBuyFee = remainingBuyValue.mul(settings.buyFeeRate);
       const totalInvested = remainingBuyValue.plus(openBuyFee);
 
       openPositions.push({
@@ -434,8 +459,10 @@ function processNormalizedTrades(trades, warnings = [], rawSettings = {}) {
     openPositionsCount: openPositions.length,
     processedAt: formatDateTime(new Date()),
     feeModel: {
-      feeRatePercent: Number(settings.feeRatePercent.toDecimalPlaces(4).toString()),
-      feeAppliesTo: settings.feeAppliesTo
+      userName: settings.userName,
+      exchangeName: settings.exchangeName,
+      buyFeePercent: Number(settings.buyFeePercent.toDecimalPlaces(4).toString()),
+      sellFeePercent: Number(settings.sellFeePercent.toDecimalPlaces(4).toString())
     }
   };
 

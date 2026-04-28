@@ -17,10 +17,10 @@ function AppHeader({
 }) {
   return (
     <header className="glass-panel grid-panel sticky top-4 z-30 mb-6 overflow-hidden px-5 py-5 sm:px-7">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-mint-500/12 via-sky-500/8 to-copper-500/10" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-mint-500/10 via-sky-500/7 to-copper-500/8" />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-4">
-          <div>
+          <div className="max-w-3xl">
             <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               Crypto Trade Tax Analyzer
             </h1>
@@ -44,14 +44,15 @@ function AppHeader({
             </div>
             {(sourceFile || processedAt) ? (
               <div className="ambient-surface rounded-[22px] border-mint-500/20 bg-gradient-to-r from-mint-500/10 to-sky-500/8 px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
-                {sourceFile ? <p className="font-semibold">Source: {sourceFile}</p> : null}
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Session Source</p>
+                {sourceFile ? <p className="mt-1 max-w-[18rem] truncate font-semibold">{sourceFile}</p> : null}
                 {processedAt ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Processed: {processedAt}</p> : null}
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:max-w-[26rem]">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
 
           <button

@@ -69,6 +69,8 @@ function buildCsvExportPayload(report) {
           buyValue: trade.buyValue,
           sellValue: trade.sellValue,
           grossProfit: trade.grossProfit,
+          buySideFee: trade.buySideFee,
+          sellSideFee: trade.sellSideFee,
           fees: trade.fees,
           gstOnFees: trade.gstOnFees,
           tds: trade.tds,
@@ -242,11 +244,13 @@ export function getSampleCsvUrl() {
   return `${API_BASE_URL}/sample-format`;
 }
 
-export async function processTradeFile(file, feeConfig = {}) {
+export async function processTradeFile(file, profile = {}) {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('feeRatePercent', feeConfig.feeRatePercent ?? '0.1');
-  formData.append('feeAppliesTo', feeConfig.feeAppliesTo ?? 'sell');
+  formData.append('userName', profile.userName ?? '');
+  formData.append('exchangeName', profile.exchangeName ?? '');
+  formData.append('buyFeePercent', profile.buyFeePercent ?? '0');
+  formData.append('sellFeePercent', profile.sellFeePercent ?? '0');
 
   const response = await api.post('/upload/process', formData, {
     headers: {

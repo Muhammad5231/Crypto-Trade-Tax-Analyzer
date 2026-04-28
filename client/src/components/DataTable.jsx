@@ -19,6 +19,7 @@ function DataTable({
   defaultSortKey,
   defaultSortDirection = 'desc',
   pageSize = 8,
+  minTableWidth = 'min-w-full',
   emptyTitle,
   emptyDescription,
   footerRow
@@ -56,7 +57,7 @@ function DataTable({
     <div className="space-y-4">
       <div className="ambient-surface-strong overflow-hidden rounded-[24px]">
         <div className="max-h-[34rem] overflow-auto scrollbar-thin">
-          <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-white/10">
+          <table className={`w-full ${minTableWidth} divide-y divide-slate-200 text-sm dark:divide-white/10`}>
             <thead className="ambient-table-head sticky top-0 z-10">
               <tr>
                 {columns.map((column) => {
@@ -66,7 +67,7 @@ function DataTable({
                     <th
                       key={column.key}
                       scope="col"
-                      className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ${
+                      className={`whitespace-nowrap px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 ${
                         column.align === 'right' ? 'text-right' : ''
                       }`}
                     >
@@ -83,7 +84,7 @@ function DataTable({
                               setSortDirection(column.initialDirection || 'desc');
                             }
                           }}
-                          className={`inline-flex items-center gap-2 transition hover:text-slate-800 dark:hover:text-white ${
+                          className={`inline-flex w-full items-center gap-2 transition hover:text-slate-800 dark:hover:text-white ${
                             column.align === 'right' ? 'justify-end' : ''
                           }`}
                         >
@@ -113,12 +114,17 @@ function DataTable({
                   </td>
                 </tr>
               ) : (
-                paginatedRows.map((row) => (
-                  <tr key={row.id} className="transition hover:bg-white/20 dark:hover:bg-white/[0.045]">
+                paginatedRows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={`transition hover:bg-white/20 dark:hover:bg-white/[0.045] ${
+                      index % 2 === 1 ? 'bg-slate-100/30 dark:bg-white/[0.02]' : ''
+                    }`}
+                  >
                     {columns.map((column) => (
                       <td
                         key={`${row.id}-${column.key}`}
-                        className={`px-4 py-3 align-top text-slate-700 dark:text-slate-200 ${
+                        className={`whitespace-nowrap px-4 py-3.5 align-top text-slate-700 dark:text-slate-200 ${
                           column.align === 'right' ? 'text-right' : ''
                         } ${typeof column.cellClassName === 'function' ? column.cellClassName(row) : column.cellClassName || ''}`}
                       >

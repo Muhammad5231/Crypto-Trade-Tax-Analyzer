@@ -20,7 +20,7 @@ The project is designed as a finance-first dashboard for spot-market activity, w
 ## Core Features
 
 - FIFO trade matching by spot pair
-- configurable spot-platform fee model by percentage and fee side (`buy`, `sell`, or `both`)
+- local spot-trader profile with user name, exchange name, buy fee %, and sell fee %
 - realized trade table with filters, sorting, totals, and pagination
 - open holdings table for unmatched lots
 - KPI summary for buy value, sell value, profit, tax, and final net
@@ -32,12 +32,14 @@ The project is designed as a finance-first dashboard for spot-market activity, w
 
 ## Product Workflow
 
-1. Upload a CSV file from the dashboard and set your spot-platform fee model.
-2. The backend parses and normalizes the file.
-3. Trades are grouped by spot pair and matched using FIFO.
-4. Summary totals, realized trades, open holdings, analytics, and warnings are generated.
-5. The frontend renders the report for desktop and mobile review.
-6. The user can export the current processed session as a CSV file.
+1. Open the website and save your spot-trader profile.
+2. Upload a CSV file from the dashboard.
+3. The backend parses and normalizes the file.
+4. Trades are grouped by spot pair and matched using FIFO.
+5. Buy-side and sell-side exchange fees are applied from the saved profile.
+6. Summary totals, realized trades, open holdings, analytics, and warnings are generated.
+7. The frontend renders the report for desktop and mobile review.
+8. The user can export the current processed session as a CSV file.
 
 ## Trade and Tax Logic
 
@@ -46,7 +48,9 @@ The processing engine applies these rules:
 - `Buy Value = matched_qty * buy_price`
 - `Sell Value = matched_qty * sell_price`
 - `Gross Profit = sell_value - buy_value`
-- `Fees = platform fee % applied to buy value, sell value, or both depending on user input`
+- `Buy Fee = buy_value * buy_fee_percent`
+- `Sell Fee = sell_value * sell_fee_percent`
+- `Total Fees = buy_fee + sell_fee`
 - `GST on Fees = 18% of fees`
 - `TDS = 1% of sell value`
 - `30% Crypto Tax = applied only when gross profit is positive`
@@ -71,7 +75,7 @@ As of **April 27, 2026**, this project is aligned to a practical India spot-trad
 
 This app currently models:
 
-- configurable spot-platform fee percentage and fee side (`buy`, `sell`, or `both`)
+- profile-based spot-platform buy fee % and sell fee %
 - base `30%` VDA tax on positive realized gain
 - `1%` TDS on transfer value
 - `18%` GST on exchange/service fees
@@ -304,8 +308,10 @@ Uploads and processes a CSV file using `multipart/form-data`.
 Request field:
 
 - `file`
-- optional `feeRatePercent`
-- optional `feeAppliesTo` (`buy`, `sell`, or `both`)
+- `userName`
+- `exchangeName`
+- `buyFeePercent`
+- `sellFeePercent`
 
 Response sections:
 

@@ -67,13 +67,8 @@ function buildCsvBundle(report) {
   const summary = report.summary || {};
   const meta = report.meta || {};
   const feeModel = meta.feeModel || {};
-  const feeRatePercent = Number(feeModel.feeRatePercent || 0).toFixed(4).replace(/\.?0+$/, '');
-  const feeAppliesToLabel =
-    feeModel.feeAppliesTo === 'buy'
-      ? 'Buy value'
-      : feeModel.feeAppliesTo === 'both'
-        ? 'Buy and sell value'
-        : 'Sell value';
+  const buyFeePercent = Number(feeModel.buyFeePercent || 0).toFixed(4).replace(/\.?0+$/, '');
+  const sellFeePercent = Number(feeModel.sellFeePercent || 0).toFixed(4).replace(/\.?0+$/, '');
 
   rows.push(buildCsvRow(['Crypto Trade Tax Analyzer - Spot CSV Export']));
   rows.push(buildCsvRow(['Export Format', 'CSV']));
@@ -81,8 +76,10 @@ function buildCsvBundle(report) {
   rows.push(buildCsvRow(['Processed On', meta.processedAt || 'N/A']));
   rows.push(buildCsvRow(['Report ID', meta.reportId || 'N/A']));
   rows.push(buildCsvRow(['Source File', meta.sourceFile || 'Workspace session']));
-  rows.push(buildCsvRow(['Spot Fee Rate', `${feeRatePercent || '0'}%`]));
-  rows.push(buildCsvRow(['Spot Fee Applied On', feeAppliesToLabel]));
+  rows.push(buildCsvRow(['User Name', feeModel.userName || 'N/A']));
+  rows.push(buildCsvRow(['Exchange', feeModel.exchangeName || 'N/A']));
+  rows.push(buildCsvRow(['Buy Fee Rate', `${buyFeePercent || '0'}%`]));
+  rows.push(buildCsvRow(['Sell Fee Rate', `${sellFeePercent || '0'}%`]));
   rows.push('');
 
   rows.push(buildCsvRow(['SUMMARY']));
@@ -107,7 +104,9 @@ function buildCsvBundle(report) {
       'Buy Value (INR)',
       'Sell Value (INR)',
       'Gross Profit',
-      'Fees',
+      'Buy Fee',
+      'Sell Fee',
+      'Total Fees',
       'GST',
       'TDS',
       '30% Tax',
@@ -125,6 +124,8 @@ function buildCsvBundle(report) {
         formatMoney(trade.buyValue),
         formatMoney(trade.sellValue),
         formatMoney(trade.grossProfit),
+        formatMoney(trade.buySideFee),
+        formatMoney(trade.sellSideFee),
         formatMoney(trade.fees),
         formatMoney(trade.gstOnFees),
         formatMoney(trade.tds),

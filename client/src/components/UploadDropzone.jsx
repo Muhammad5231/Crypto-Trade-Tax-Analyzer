@@ -5,13 +5,12 @@ function UploadDropzone({
   inputRef,
   onFileSelected,
   onDownloadSample,
+  onOpenProfile,
   onRecalculate,
   isProcessing,
   currentFileName,
   stats,
-  feeConfig,
-  onFeeRateChange,
-  onFeeAppliesToChange
+  profile
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -98,46 +97,48 @@ function UploadDropzone({
         <div className="grid gap-4">
           <div className="ambient-surface rounded-[28px] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Spot Fee Model
+              Trading Profile
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="space-y-2 text-sm">
-                <span className="font-medium text-slate-700 dark:text-slate-200">Platform fee (%)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={feeConfig.feeRatePercent}
-                  onChange={(event) => onFeeRateChange(event.target.value)}
-                  className="ambient-input w-full rounded-2xl px-4 py-3 text-slate-900 outline-none transition focus:border-mint-500 dark:text-white"
-                />
-              </label>
-              <label className="space-y-2 text-sm">
-                <span className="font-medium text-slate-700 dark:text-slate-200">Apply fees on</span>
-                <select
-                  value={feeConfig.feeAppliesTo}
-                  onChange={(event) => onFeeAppliesToChange(event.target.value)}
-                  className="ambient-input w-full rounded-2xl px-4 py-3 text-slate-900 outline-none transition focus:border-mint-500 dark:text-white"
-                >
-                  <option value="buy">Buy side only</option>
-                  <option value="sell">Sell side only</option>
-                  <option value="both">Buy and sell</option>
-                </select>
-              </label>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <div className="ambient-surface-soft min-w-[11rem] flex-1 rounded-2xl px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Trader</p>
+                <p className="mt-2 font-semibold text-slate-900 dark:text-white">{profile.userName || 'Not set'}</p>
+              </div>
+              <div className="ambient-surface-soft min-w-[11rem] flex-1 rounded-2xl px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Exchange</p>
+                <p className="mt-2 font-semibold text-slate-900 dark:text-white">{profile.exchangeName || 'Not set'}</p>
+              </div>
+              <div className="ambient-surface-soft rounded-2xl px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Buy Fee</p>
+                <p className="mt-2 font-semibold text-slate-900 dark:text-white">{profile.buyFeePercent}%</p>
+              </div>
+              <div className="ambient-surface-soft rounded-2xl px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Sell Fee</p>
+                <p className="mt-2 font-semibold text-slate-900 dark:text-white">{profile.sellFeePercent}%</p>
+              </div>
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              The engine uses this fee model for FIFO trade costs, 18% GST on fees, and open-lot invested capital.
+              This saved profile powers fee-aware FIFO calculations for every processed spot-trading session.
             </p>
-            {onRecalculate ? (
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={onRecalculate}
-                disabled={isProcessing}
-                className="mt-4 rounded-full border border-slate-300/70 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200"
+                onClick={onOpenProfile}
+                className="rounded-full border border-slate-300/70 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 dark:border-white/10 dark:text-slate-200"
               >
-                Recalculate current file
+                Edit profile
               </button>
-            ) : null}
+              {onRecalculate ? (
+                <button
+                  type="button"
+                  onClick={onRecalculate}
+                  disabled={isProcessing}
+                  className="rounded-full border border-slate-300/70 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200"
+                >
+                  Recalculate current file
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="ambient-surface-strong relative overflow-hidden rounded-[28px] border-sky-100/80 px-5 py-5 text-slate-800 dark:border-white/10 dark:text-white">
@@ -149,12 +150,12 @@ function UploadDropzone({
                 Processing Flow
               </p>
               <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                <p>1. Validate CSV structure and safely skip malformed rows.</p>
-                <p>2. Parse timestamps, quantities, and prices with finance-safe handling.</p>
-                <p>3. Match spot buys and sells using FIFO for realized P&amp;L.</p>
-                <p>4. Apply your spot fee model, 18% GST on fees, 1% TDS, and the base 30% VDA tax model.</p>
-              </div>
+              <p>1. Validate CSV structure and safely skip malformed rows.</p>
+              <p>2. Parse timestamps, quantities, and prices with finance-safe handling.</p>
+              <p>3. Match spot buys and sells using FIFO for realized P&amp;L.</p>
+              <p>4. Apply saved exchange fees, GST on fees, TDS, and base spot-tax deductions.</p>
             </div>
+          </div>
           </div>
 
           <div className="ambient-surface rounded-[28px] p-5">

@@ -228,7 +228,7 @@ function MobileSectionCard({ eyebrow, title, description, action, children, clas
   );
 }
 
-function MobileTradeCard({ trade }) {
+function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
   return (
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
       <div className="pointer-events-none absolute -left-6 top-0 h-20 w-20 rounded-full bg-sky-500/8 blur-3xl" />
@@ -295,7 +295,19 @@ function MobileTradeCard({ trade }) {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">Fees {formatCurrency(trade.fees)}</span>
+          {showBuyFee ? (
+            <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">
+              Buy Fee {formatCurrency(trade.buySideFee)}
+            </span>
+          ) : null}
+          {showSellFee ? (
+            <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">
+              Sell Fee {formatCurrency(trade.sellSideFee)}
+            </span>
+          ) : null}
+          <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">
+            Total Fees {formatCurrency(trade.fees)}
+          </span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">GST {formatCurrency(trade.gstOnFees)}</span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">TDS {formatCurrency(trade.tds)}</span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">Tax {formatCurrency(trade.cryptoTax)}</span>
@@ -448,6 +460,7 @@ function MobileDashboardView({
   onToggleTheme,
   onUploadClick,
   onDownloadSample,
+  onOpenProfile,
   onRecalculateCurrentFile,
   onClearReport,
   report,
@@ -455,11 +468,9 @@ function MobileDashboardView({
   summary,
   stats,
   warnings,
+  profile,
   sourceFile,
   processedAt,
-  feeConfig,
-  onFeeRateChange,
-  onFeeAppliesToChange,
   activeMobileTab,
   onActiveMobileTabChange,
   mobileMetricCards,
@@ -518,6 +529,9 @@ function MobileDashboardView({
   const isDark = theme === 'dark';
   const showMobileHeader = !hasReport || activeMobileTab === 'overview';
   const remainingTradeCount = Math.max(0, filteredTrades.length - visibleMobileTrades.length);
+  const reportFeeModel = report?.meta?.feeModel || profile;
+  const showBuyFee = Number(reportFeeModel?.buyFeePercent || 0) > 0;
+  const showSellFee = Number(reportFeeModel?.sellFeePercent || 0) > 0;
 
   return (
     <div className="space-y-4 pb-32 lg:hidden">
@@ -574,61 +588,32 @@ function MobileDashboardView({
               </div>
             </div>
 
-            <div
-              className={`mt-4 rounded-[24px] border p-4 ${
-                isDark ? 'border-white/10 bg-white/[0.05]' : 'border-slate-200/80 bg-white/72 shadow-soft'
-              }`}
-            >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-2 text-sm">
-                  <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Platform fee (%)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={feeConfig.feeRatePercent}
-                    onChange={(event) => onFeeRateChange(event.target.value)}
-                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${
-                      isDark
-                        ? 'border-white/10 bg-white/[0.05] text-white focus:border-mint-400'
-                        : 'border-slate-200/80 bg-white/85 text-slate-900 focus:border-mint-500'
-                    }`}
-                  />
-                </label>
-                <label className="space-y-2 text-sm">
-                  <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Apply fees on</span>
-                  <select
-                    value={feeConfig.feeAppliesTo}
-                    onChange={(event) => onFeeAppliesToChange(event.target.value)}
-                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${
-                      isDark
-                        ? 'border-white/10 bg-white/[0.05] text-white focus:border-mint-400'
-                        : 'border-slate-200/80 bg-white/85 text-slate-900 focus:border-mint-500'
-                    }`}
-                  >
-                    <option value="buy">Buy side only</option>
-                    <option value="sell">Sell side only</option>
-                    <option value="both">Buy and sell</option>
-                  </select>
-                </label>
-              </div>
-              <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                This fee model is used for matched spot trades, GST on fees, and open-holding invested capital.
-              </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className={`rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                  isDark
+                    ? 'border border-white/10 bg-white/[0.06] text-slate-200 hover:border-mint-400/40 hover:text-white'
+                    : 'border border-slate-200/80 bg-white/88 text-slate-700 hover:border-mint-500 hover:text-slate-900'
+                }`}
+              >
+                Edit Profile
+              </button>
               {onRecalculateCurrentFile ? (
                 <button
                   type="button"
                   onClick={onRecalculateCurrentFile}
                   disabled={processing}
-                  className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  className={`rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                     processing
                       ? 'cursor-not-allowed bg-slate-400/20 text-slate-400'
                       : isDark
-                        ? 'border border-white/10 bg-white/[0.06] text-white hover:border-mint-400/40 hover:bg-white/[0.09]'
-                        : 'border border-slate-200/80 bg-white/90 text-slate-800 hover:border-mint-500 hover:text-slate-900'
+                        ? 'border border-white/10 bg-white/[0.06] text-slate-200 hover:border-mint-400/40 hover:text-white'
+                        : 'border border-slate-200/80 bg-white/88 text-slate-700 hover:border-mint-500 hover:text-slate-900'
                   }`}
                 >
-                  Recalculate current file
+                  Recalculate File
                 </button>
               ) : null}
             </div>
@@ -831,7 +816,7 @@ function MobileDashboardView({
               {visibleMobileTrades.length ? (
                 <div className="space-y-3">
                   {visibleMobileTrades.map((trade) => (
-                    <MobileTradeCard key={trade.id} trade={trade} />
+                    <MobileTradeCard key={trade.id} trade={trade} showBuyFee={showBuyFee} showSellFee={showSellFee} />
                   ))}
                 </div>
               ) : (

@@ -3,27 +3,41 @@ const { generateCsvBuffer } = require('../services/export.service');
 const { AppError } = require('../utils/app-error');
 const { processTradeUpload } = require('../services/trade-processing.service');
 
-function getFeeConfig(req) {
-  const rawFeeRatePercent = req.body?.feeRatePercent;
-  const rawFeeAppliesTo = String(req.body?.feeAppliesTo || 'sell')
-    .trim()
-    .toLowerCase();
-  const feeRatePercent =
-    rawFeeRatePercent === undefined || rawFeeRatePercent === null || String(rawFeeRatePercent).trim() === ''
-      ? 0.1
-      : Number(rawFeeRatePercent);
+function getProfileConfig(req) {
+  const userName = String(req.body?.userName || '').trim();
+  const exchangeName = String(req.body?.exchangeName || '').trim();
+  const rawBuyFeePercent = req.body?.buyFeePercent;
+  const rawSellFeePercent = req.body?.sellFeePercent;
+  const buyFeePercent =
+    rawBuyFeePercent === undefined || rawBuyFeePercent === null || String(rawBuyFeePercent).trim() === ''
+      ? 0
+      : Number(rawBuyFeePercent);
+  const sellFeePercent =
+    rawSellFeePercent === undefined || rawSellFeePercent === null || String(rawSellFeePercent).trim() === ''
+      ? 0
+      : Number(rawSellFeePercent);
 
-  if (!Number.isFinite(feeRatePercent) || feeRatePercent < 0) {
-    throw new AppError('Spot trading fee percent must be zero or greater.', 400);
+  if (!userName) {
+    throw new AppError('Please enter a user name before processing trades.', 400);
   }
 
-  if (!['buy', 'sell', 'both'].includes(rawFeeAppliesTo)) {
-    throw new AppError('Spot trading fee side must be buy, sell, or both.', 400);
+  if (!exchangeName) {
+    throw new AppError('Please enter an exchange name before processing trades.', 400);
+  }
+
+  if (!Number.isFinite(buyFeePercent) || buyFeePercent < 0) {
+    throw new AppError('Buy-side spot fee percent must be zero or greater.', 400);
+  }
+
+  if (!Number.isFinite(sellFeePercent) || sellFeePercent < 0) {
+    throw new AppError('Sell-side spot fee percent must be zero or greater.', 400);
   }
 
   return {
-    feeRatePercent,
-    feeAppliesTo: rawFeeAppliesTo
+    userName,
+    exchangeName,
+    buyFeePercent,
+    sellFeePercent
   };
 }
 
@@ -33,7 +47,7 @@ function processUpload(req, res, next) {
       throw new AppError('Please upload a CSV file to continue.', 400);
     }
 
-    const report = processTradeUpload(req.file.buffer, getFeeConfig(req));
+    const report = processTradeUpload(req.file.buffer, getProfileConfig(req));
 
     res.json({
       success: true,

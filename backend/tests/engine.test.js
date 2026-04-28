@@ -19,8 +19,10 @@ test('processTradeUpload returns expected totals for the sample CSV', () => {
   assert.equal(report.summary.totalCryptoTax, 59100);
   assert.equal(report.summary.finalNetProfit, 83360.54);
   assert.deepEqual(report.meta.feeModel, {
-    feeRatePercent: 0.1,
-    feeAppliesTo: 'sell'
+    userName: '',
+    exchangeName: '',
+    buyFeePercent: 0,
+    sellFeePercent: 0.1
   });
 });
 
@@ -57,8 +59,10 @@ test('processTradeUpload applies configurable buy-side spot fees and carries the
 2024-03-05 10:00:00,SOLUSDT,2,sell,150`;
 
   const report = processTradeUpload(Buffer.from(csv, 'utf8'), {
-    feeRatePercent: 1,
-    feeAppliesTo: 'buy'
+    userName: 'Muhammad',
+    exchangeName: 'Delta',
+    buyFeePercent: 1,
+    sellFeePercent: 0
   });
 
   assert.equal(report.realizedTrades.length, 1);
@@ -69,7 +73,9 @@ test('processTradeUpload applies configurable buy-side spot fees and carries the
   assert.equal(report.openPositions[0].buySideFee, 3);
   assert.equal(report.openPositions[0].totalInvested, 303);
   assert.deepEqual(report.meta.feeModel, {
-    feeRatePercent: 1,
-    feeAppliesTo: 'buy'
+    userName: 'Muhammad',
+    exchangeName: 'Delta',
+    buyFeePercent: 1,
+    sellFeePercent: 0
   });
 });
