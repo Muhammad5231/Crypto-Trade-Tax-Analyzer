@@ -64,7 +64,7 @@ function MobileIconAction({ icon: Icon, onClick, label, tone = 'neutral', invert
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`inline-flex h-[3.2rem] w-[3.2rem] items-center justify-center rounded-[20px] border transition ${
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-[20px] border transition ${
         inverted ? 'bg-white/[0.04]' : 'bg-white/60 dark:bg-white/[0.04]'
       } ${toneClass}`}
     >
@@ -90,7 +90,7 @@ function MobileSecondaryAction({ children, icon: Icon, onClick, tone = 'neutral'
       className={`inline-flex min-h-[3.15rem] items-center justify-center gap-2 rounded-[20px] border px-4 py-3 text-sm font-semibold transition ${toneClass}`}
     >
       {Icon ? <Icon className="h-4 w-4" /> : null}
-      <span>{children}</span>
+      <span className="whitespace-nowrap">{children}</span>
     </button>
   );
 }
@@ -561,37 +561,43 @@ function MobileDashboardView({
           <div className="pointer-events-none absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-mint-500/14 blur-3xl" />
 
           <div className="relative">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-mint-300' : 'text-mint-700'}`}>
+            <div className="relative">
+              <div className="relative min-h-[3.1rem]">
+                <p
+                  className={`max-w-[8.9rem] text-[10px] font-semibold uppercase leading-[1.42] tracking-[0.18em] ${
+                    isDark ? 'text-mint-300' : 'text-mint-700'
+                  }`}
+                >
                   Spot Trading Workspace
                 </p>
-                <h1 className="mt-2 max-w-[15rem] font-display text-[2rem] font-bold leading-[0.98] tracking-tight">
-                  Crypto Trade Tax Analyzer
-                </h1>
-                <p className={`mt-3 max-w-xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {hasReport
-                    ? 'A compact review surface for spot uploads, realized trades, open holdings, and analytics.'
-                    : 'Upload spot exchange CSVs, match trades with FIFO logic, and review taxes in a cleaner mobile flow.'}
-                </p>
+                <div className="ambient-surface-soft absolute -top-1.5 right-0 flex shrink-0 items-center gap-1 rounded-[20px] p-[5px] shadow-[0_14px_28px_rgba(2,6,23,0.18)]">
+                  <MobileIconAction
+                    icon={theme === 'dark' ? SunMedium : MoonStar}
+                    onClick={onToggleTheme}
+                    label="Toggle theme"
+                    inverted={isDark}
+                  />
+                  {hasReport ? <ExportMenu report={report} sourceFile={sourceFile} processedAt={processedAt} iconOnly compact /> : null}
+                </div>
               </div>
 
-              <div className="ambient-surface-soft flex shrink-0 items-center gap-2 rounded-[22px] p-1.5 pt-1.5">
-                <MobileIconAction
-                  icon={theme === 'dark' ? SunMedium : MoonStar}
-                  onClick={onToggleTheme}
-                  label="Toggle theme"
-                  inverted={isDark}
-                />
-                {hasReport ? <ExportMenu report={report} sourceFile={sourceFile} processedAt={processedAt} iconOnly compact /> : null}
+              <div className="-mt-1.5 min-w-0 pr-[6.25rem]">
+                <h1 className="max-w-[11rem] font-display text-[1.62rem] font-bold leading-[1.26] tracking-tight">
+                  Crypto Trade Tax Analyzer
+                </h1>
               </div>
+              <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                {hasReport
+                  ? 'A compact review surface for spot uploads, realized trades, open holdings, and analytics.'
+                  : 'Upload spot exchange CSVs, match trades with FIFO logic, and review taxes in a cleaner mobile flow.'}
+              </p>
             </div>
 
             <div className="mt-5 space-y-3">
               <MobilePrimaryAction onClick={onUploadClick} icon={Upload} tone={isDark ? 'light' : 'dark'} className="w-full">
                 Upload CSV
               </MobilePrimaryAction>
-              <div className={`grid gap-3 ${hasReport ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`grid gap-3 ${hasReport ? 'grid-cols-1 min-[390px]:grid-cols-2' : 'grid-cols-1'}`}>
                 <MobileSecondaryAction icon={FileSpreadsheet} onClick={onDownloadSample} inverted={isDark}>
                   Sample CSV
                 </MobileSecondaryAction>

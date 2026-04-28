@@ -136,7 +136,7 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
         type="button"
         onClick={() => setOpen((currentValue) => !currentValue)}
         className={`ambient-pill inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-copper-500 hover:text-slate-900 dark:text-slate-200 dark:hover:border-copper-300 ${
-          iconOnly ? 'h-12 w-12 rounded-2xl px-0 py-0' : ''
+          iconOnly ? 'h-11 w-11 rounded-[18px] px-0 py-0' : ''
         }`}
       >
         <FileSpreadsheet className={iconOnly ? 'h-[18px] w-[18px]' : 'h-4 w-4'} />
