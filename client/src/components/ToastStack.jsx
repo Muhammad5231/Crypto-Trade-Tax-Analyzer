@@ -1,6 +1,6 @@
 function ToastStack({ toasts, onDismiss }) {
   return (
-    <div className="fixed right-4 top-4 z-50 flex w-full max-w-sm flex-col gap-3">
+    <div className="fixed inset-x-3 top-3 z-50 flex flex-col gap-3 sm:left-auto sm:right-4 sm:top-4 sm:w-full sm:max-w-sm">
       {toasts.map((toast) => (
         <div
           key={toast.id}
