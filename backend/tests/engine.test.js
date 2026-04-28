@@ -18,6 +18,10 @@ test('processTradeUpload returns expected totals for the sample CSV', () => {
   assert.equal(report.summary.totalTdsDeducted, 38470);
   assert.equal(report.summary.totalCryptoTax, 59100);
   assert.equal(report.summary.finalNetProfit, 83360.54);
+  assert.deepEqual(report.meta.feeModel, {
+    feeRatePercent: 0.1,
+    feeAppliesTo: 'sell'
+  });
 });
 
 test('processTradeUpload preserves unmatched buys as open positions', () => {
@@ -45,4 +49,27 @@ test('processTradeUpload skips cancelled rows without creating warnings', () => 
   assert.equal(report.meta.validTrades, 2);
   assert.equal(report.realizedTrades.length, 1);
   assert.equal(report.warnings.length, 0);
+});
+
+test('processTradeUpload applies configurable buy-side spot fees and carries them into open holdings', () => {
+  const csv = `Time,Contract,Qty,Side,Exec.Price
+2024-03-01 10:00:00,SOLUSDT,5,buy,100
+2024-03-05 10:00:00,SOLUSDT,2,sell,150`;
+
+  const report = processTradeUpload(Buffer.from(csv, 'utf8'), {
+    feeRatePercent: 1,
+    feeAppliesTo: 'buy'
+  });
+
+  assert.equal(report.realizedTrades.length, 1);
+  assert.equal(report.realizedTrades[0].fees, 2);
+  assert.equal(report.realizedTrades[0].gstOnFees, 0.36);
+  assert.equal(report.realizedTrades[0].finalNetProfit, 67.64);
+  assert.equal(report.openPositions.length, 1);
+  assert.equal(report.openPositions[0].buySideFee, 3);
+  assert.equal(report.openPositions[0].totalInvested, 303);
+  assert.deepEqual(report.meta.feeModel, {
+    feeRatePercent: 1,
+    feeAppliesTo: 'buy'
+  });
 });

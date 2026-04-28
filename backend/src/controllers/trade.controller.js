@@ -3,13 +3,37 @@ const { generateCsvBuffer } = require('../services/export.service');
 const { AppError } = require('../utils/app-error');
 const { processTradeUpload } = require('../services/trade-processing.service');
 
+function getFeeConfig(req) {
+  const rawFeeRatePercent = req.body?.feeRatePercent;
+  const rawFeeAppliesTo = String(req.body?.feeAppliesTo || 'sell')
+    .trim()
+    .toLowerCase();
+  const feeRatePercent =
+    rawFeeRatePercent === undefined || rawFeeRatePercent === null || String(rawFeeRatePercent).trim() === ''
+      ? 0.1
+      : Number(rawFeeRatePercent);
+
+  if (!Number.isFinite(feeRatePercent) || feeRatePercent < 0) {
+    throw new AppError('Spot trading fee percent must be zero or greater.', 400);
+  }
+
+  if (!['buy', 'sell', 'both'].includes(rawFeeAppliesTo)) {
+    throw new AppError('Spot trading fee side must be buy, sell, or both.', 400);
+  }
+
+  return {
+    feeRatePercent,
+    feeAppliesTo: rawFeeAppliesTo
+  };
+}
+
 function processUpload(req, res, next) {
   try {
     if (!req.file || !req.file.buffer) {
       throw new AppError('Please upload a CSV file to continue.', 400);
     }
 
-    const report = processTradeUpload(req.file.buffer);
+    const report = processTradeUpload(req.file.buffer, getFeeConfig(req));
 
     res.json({
       success: true,

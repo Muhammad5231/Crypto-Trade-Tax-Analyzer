@@ -43,7 +43,8 @@ function buildExportBase(report) {
     meta: {
       sourceFile: report.meta?.sourceFile,
       processedAt: report.meta?.processedAt,
-      reportId: report.meta?.reportId
+      reportId: report.meta?.reportId,
+      feeModel: report.meta?.feeModel
     }
   };
 }
@@ -241,9 +242,11 @@ export function getSampleCsvUrl() {
   return `${API_BASE_URL}/sample-format`;
 }
 
-export async function processTradeFile(file) {
+export async function processTradeFile(file, feeConfig = {}) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('feeRatePercent', feeConfig.feeRatePercent ?? '0.1');
+  formData.append('feeAppliesTo', feeConfig.feeAppliesTo ?? 'sell');
 
   const response = await api.post('/upload/process', formData, {
     headers: {

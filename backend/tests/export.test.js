@@ -14,6 +14,8 @@ test('generateCsvBuffer returns a combined CSV export payload', async () => {
   const csvText = csvBuffer.toString('utf8');
 
   assert.match(csvText, /Crypto Trade Tax Analyzer - Spot CSV Export/);
+  assert.match(csvText, /Spot Fee Rate,0.1%/);
+  assert.match(csvText, /Spot Fee Applied On,Sell value/);
   assert.match(csvText, /SUMMARY/);
   assert.match(csvText, /REALIZED TRADES/);
   assert.match(csvText, /Pair,Buy Date,Sell Date,Qty/);

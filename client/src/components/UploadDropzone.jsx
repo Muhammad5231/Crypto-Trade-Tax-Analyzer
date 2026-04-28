@@ -1,7 +1,18 @@
 import { FileWarning, UploadCloud } from 'lucide-react';
 import { useState } from 'react';
 
-function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessing, currentFileName, stats }) {
+function UploadDropzone({
+  inputRef,
+  onFileSelected,
+  onDownloadSample,
+  onRecalculate,
+  isProcessing,
+  currentFileName,
+  stats,
+  feeConfig,
+  onFeeRateChange,
+  onFeeAppliesToChange
+}) {
   const [isDragging, setIsDragging] = useState(false);
 
   function handleIncomingFiles(fileList) {
@@ -85,6 +96,50 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
         </div>
 
         <div className="grid gap-4">
+          <div className="ambient-surface rounded-[28px] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Spot Fee Model
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="space-y-2 text-sm">
+                <span className="font-medium text-slate-700 dark:text-slate-200">Platform fee (%)</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={feeConfig.feeRatePercent}
+                  onChange={(event) => onFeeRateChange(event.target.value)}
+                  className="ambient-input w-full rounded-2xl px-4 py-3 text-slate-900 outline-none transition focus:border-mint-500 dark:text-white"
+                />
+              </label>
+              <label className="space-y-2 text-sm">
+                <span className="font-medium text-slate-700 dark:text-slate-200">Apply fees on</span>
+                <select
+                  value={feeConfig.feeAppliesTo}
+                  onChange={(event) => onFeeAppliesToChange(event.target.value)}
+                  className="ambient-input w-full rounded-2xl px-4 py-3 text-slate-900 outline-none transition focus:border-mint-500 dark:text-white"
+                >
+                  <option value="buy">Buy side only</option>
+                  <option value="sell">Sell side only</option>
+                  <option value="both">Buy and sell</option>
+                </select>
+              </label>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              The engine uses this fee model for FIFO trade costs, 18% GST on fees, and open-lot invested capital.
+            </p>
+            {onRecalculate ? (
+              <button
+                type="button"
+                onClick={onRecalculate}
+                disabled={isProcessing}
+                className="mt-4 rounded-full border border-slate-300/70 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200"
+              >
+                Recalculate current file
+              </button>
+            ) : null}
+          </div>
+
           <div className="ambient-surface-strong relative overflow-hidden rounded-[28px] border-sky-100/80 px-5 py-5 text-slate-800 dark:border-white/10 dark:text-white">
             <div className="pointer-events-none absolute -right-10 top-2 h-24 w-24 rounded-full bg-sky-500/8 blur-3xl dark:bg-sky-500/8" />
             <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-mint-500/8 blur-3xl dark:bg-mint-500/7" />
@@ -97,7 +152,7 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
                 <p>1. Validate CSV structure and safely skip malformed rows.</p>
                 <p>2. Parse timestamps, quantities, and prices with finance-safe handling.</p>
                 <p>3. Match spot buys and sells using FIFO for realized P&amp;L.</p>
-                <p>4. Calculate fees, GST, TDS, 30% tax, and final credit-adjusted profit.</p>
+                <p>4. Apply your spot fee model, 18% GST on fees, 1% TDS, and the base 30% VDA tax model.</p>
               </div>
             </div>
           </div>
@@ -111,6 +166,7 @@ function UploadDropzone({ inputRef, onFileSelected, onDownloadSample, isProcessi
                 <p className="font-semibold text-slate-900 dark:text-white">Best results with spot exchange export CSVs</p>
                 <p>Use standard spot trade history files with one executed order per row and timestamps in chronological order.</p>
                 <p>Large files are supported with sticky tables, pagination, and analytics summaries.</p>
+                <p>2026 India tax note: surcharge, cess, thresholds, and trader-specific treatment should still be reviewed professionally.</p>
               </div>
             </div>
 

@@ -448,6 +448,7 @@ function MobileDashboardView({
   onToggleTheme,
   onUploadClick,
   onDownloadSample,
+  onRecalculateCurrentFile,
   onClearReport,
   report,
   processing,
@@ -456,6 +457,9 @@ function MobileDashboardView({
   warnings,
   sourceFile,
   processedAt,
+  feeConfig,
+  onFeeRateChange,
+  onFeeAppliesToChange,
   activeMobileTab,
   onActiveMobileTabChange,
   mobileMetricCards,
@@ -568,6 +572,65 @@ function MobileDashboardView({
                   </MobileSecondaryAction>
                 ) : null}
               </div>
+            </div>
+
+            <div
+              className={`mt-4 rounded-[24px] border p-4 ${
+                isDark ? 'border-white/10 bg-white/[0.05]' : 'border-slate-200/80 bg-white/72 shadow-soft'
+              }`}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-2 text-sm">
+                  <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Platform fee (%)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={feeConfig.feeRatePercent}
+                    onChange={(event) => onFeeRateChange(event.target.value)}
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${
+                      isDark
+                        ? 'border-white/10 bg-white/[0.05] text-white focus:border-mint-400'
+                        : 'border-slate-200/80 bg-white/85 text-slate-900 focus:border-mint-500'
+                    }`}
+                  />
+                </label>
+                <label className="space-y-2 text-sm">
+                  <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Apply fees on</span>
+                  <select
+                    value={feeConfig.feeAppliesTo}
+                    onChange={(event) => onFeeAppliesToChange(event.target.value)}
+                    className={`w-full rounded-2xl border px-4 py-3 outline-none transition ${
+                      isDark
+                        ? 'border-white/10 bg-white/[0.05] text-white focus:border-mint-400'
+                        : 'border-slate-200/80 bg-white/85 text-slate-900 focus:border-mint-500'
+                    }`}
+                  >
+                    <option value="buy">Buy side only</option>
+                    <option value="sell">Sell side only</option>
+                    <option value="both">Buy and sell</option>
+                  </select>
+                </label>
+              </div>
+              <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                This fee model is used for matched spot trades, GST on fees, and open-holding invested capital.
+              </p>
+              {onRecalculateCurrentFile ? (
+                <button
+                  type="button"
+                  onClick={onRecalculateCurrentFile}
+                  disabled={processing}
+                  className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    processing
+                      ? 'cursor-not-allowed bg-slate-400/20 text-slate-400'
+                      : isDark
+                        ? 'border border-white/10 bg-white/[0.06] text-white hover:border-mint-400/40 hover:bg-white/[0.09]'
+                        : 'border border-slate-200/80 bg-white/90 text-slate-800 hover:border-mint-500 hover:text-slate-900'
+                  }`}
+                >
+                  Recalculate current file
+                </button>
+              ) : null}
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">

@@ -66,6 +66,14 @@ function buildCsvBundle(report) {
   const rows = [];
   const summary = report.summary || {};
   const meta = report.meta || {};
+  const feeModel = meta.feeModel || {};
+  const feeRatePercent = Number(feeModel.feeRatePercent || 0).toFixed(4).replace(/\.?0+$/, '');
+  const feeAppliesToLabel =
+    feeModel.feeAppliesTo === 'buy'
+      ? 'Buy value'
+      : feeModel.feeAppliesTo === 'both'
+        ? 'Buy and sell value'
+        : 'Sell value';
 
   rows.push(buildCsvRow(['Crypto Trade Tax Analyzer - Spot CSV Export']));
   rows.push(buildCsvRow(['Export Format', 'CSV']));
@@ -73,6 +81,8 @@ function buildCsvBundle(report) {
   rows.push(buildCsvRow(['Processed On', meta.processedAt || 'N/A']));
   rows.push(buildCsvRow(['Report ID', meta.reportId || 'N/A']));
   rows.push(buildCsvRow(['Source File', meta.sourceFile || 'Workspace session']));
+  rows.push(buildCsvRow(['Spot Fee Rate', `${feeRatePercent || '0'}%`]));
+  rows.push(buildCsvRow(['Spot Fee Applied On', feeAppliesToLabel]));
   rows.push('');
 
   rows.push(buildCsvRow(['SUMMARY']));

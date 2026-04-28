@@ -19,8 +19,55 @@ import usePersistedState from '../hooks/usePersistedState';
 import { getSampleCsvUrl, processTradeFile } from '../services/api';
 import { formatCurrency, formatDateTime, formatQuantity } from '../utils/formatters';
 
+const DEFAULT_FEE_CONFIG = {
+  feeRatePercent: '0.1',
+  feeAppliesTo: 'sell'
+};
+
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeFeeConfig(rawConfig) {
+  const nextFeeAppliesTo = ['buy', 'sell', 'both'].includes(rawConfig?.feeAppliesTo)
+    ? rawConfig.feeAppliesTo
+    : DEFAULT_FEE_CONFIG.feeAppliesTo;
+  const rawFeeRatePercent = rawConfig?.feeRatePercent;
+  const parsedFeeRate = Number(rawFeeRatePercent);
+
+  return {
+    feeRatePercent:
+      rawFeeRatePercent === undefined ||
+      rawFeeRatePercent === null ||
+      String(rawFeeRatePercent).trim() === '' ||
+      !Number.isFinite(parsedFeeRate) ||
+      parsedFeeRate < 0
+        ? DEFAULT_FEE_CONFIG.feeRatePercent
+        : String(rawFeeRatePercent),
+    feeAppliesTo: nextFeeAppliesTo
+  };
+}
+
+function formatFeeRatePercent(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return DEFAULT_FEE_CONFIG.feeRatePercent;
+  }
+
+  return parsedValue.toFixed(4).replace(/\.?0+$/, '');
+}
+
+function getFeeApplicationLabel(feeAppliesTo) {
+  if (feeAppliesTo === 'buy') {
+    return 'buy value';
+  }
+
+  if (feeAppliesTo === 'both') {
+    return 'buy + sell value';
+  }
+
+  return 'sell value';
 }
 
 function normalizeReport(rawReport) {
@@ -30,7 +77,8 @@ function normalizeReport(rawReport) {
 
   const meta = {
     ...rawReport.meta,
-    contracts: Array.isArray(rawReport.meta.contracts) ? rawReport.meta.contracts : []
+    contracts: Array.isArray(rawReport.meta.contracts) ? rawReport.meta.contracts : [],
+    feeModel: normalizeFeeConfig(rawReport.meta.feeModel)
   };
 
   const analytics = isPlainObject(rawReport.analytics)
@@ -96,8 +144,10 @@ function DashboardPage() {
   const isMobile = useMediaQuery('(max-width: 1023px)');
   const [theme, setTheme] = usePersistedState('crypto-tax-theme', 'dark');
   const [report, setReport] = usePersistedState('crypto-tax-last-report', null);
+  const [storedFeeConfig, setStoredFeeConfig] = usePersistedState('crypto-tax-fee-model', DEFAULT_FEE_CONFIG);
   const [activeMobileTab, setActiveMobileTab] = usePersistedState('crypto-tax-mobile-tab', 'overview');
   const [currentFileName, setCurrentFileName] = useState('');
+  const [lastUploadedFile, setLastUploadedFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [tradeSearch, setTradeSearch] = useState('');
   const [openSearch, setOpenSearch] = useState('');
@@ -135,12 +185,23 @@ function DashboardPage() {
   }, [openSearch, selectedOpenContract, report?.openPositions?.length]);
 
   const safeReport = useMemo(() => normalizeReport(report), [report]);
+  const feeConfig = useMemo(() => normalizeFeeConfig(storedFeeConfig), [storedFeeConfig]);
   const isDarkTheme = theme === 'dark';
+
+  useEffect(() => {
+    if (
+      storedFeeConfig?.feeRatePercent !== feeConfig.feeRatePercent ||
+      storedFeeConfig?.feeAppliesTo !== feeConfig.feeAppliesTo
+    ) {
+      setStoredFeeConfig(feeConfig);
+    }
+  }, [feeConfig, setStoredFeeConfig, storedFeeConfig]);
 
   useEffect(() => {
     if (report && !safeReport) {
       setReport(null);
       setCurrentFileName('');
+      setLastUploadedFile(null);
     }
   }, [report, safeReport, setReport]);
 
@@ -156,7 +217,7 @@ function DashboardPage() {
     ]);
   }
 
-  async function handleFileSelected(file) {
+  async function processSelectedFile(file) {
     if (!file) {
       return;
     }
@@ -165,7 +226,7 @@ function DashboardPage() {
     setCurrentFileName(file.name);
 
     try {
-      const nextReport = await processTradeFile(file);
+      const nextReport = await processTradeFile(file, feeConfig);
 
       nextReport.meta = {
         ...nextReport.meta,
@@ -199,6 +260,23 @@ function DashboardPage() {
     }
   }
 
+  async function handleFileSelected(file) {
+    if (!file) {
+      return;
+    }
+
+    setLastUploadedFile(file);
+    await processSelectedFile(file);
+  }
+
+  async function recalculateCurrentFile() {
+    if (!lastUploadedFile || processing) {
+      return;
+    }
+
+    await processSelectedFile(lastUploadedFile);
+  }
+
   function downloadSample() {
     window.open(getSampleCsvUrl(), '_blank', 'noopener,noreferrer');
   }
@@ -206,6 +284,7 @@ function DashboardPage() {
   function clearReport() {
     setReport(null);
     setCurrentFileName('');
+    setLastUploadedFile(null);
     setActiveMobileTab('overview');
     pushToast('Workspace cleared', 'The locally stored processed report has been removed.');
   }
@@ -276,6 +355,10 @@ function DashboardPage() {
     ? (summary.totalFeesPaid || 0) + (summary.totalGstOnFees || 0) + (summary.totalTdsDeducted || 0) + (summary.totalCryptoTax || 0)
     : 0;
   const activeSourceFile = currentFileName || safeReport?.meta?.sourceFile || 'No source attached';
+  const appliedFeeModel = safeReport?.meta?.feeModel || feeConfig;
+  const feeModelHelper = `${formatFeeRatePercent(appliedFeeModel.feeRatePercent)}% on ${getFeeApplicationLabel(
+    appliedFeeModel.feeAppliesTo
+  )}`;
   const snapshotComparisonBase = Math.max(
     Math.abs(summary?.finalNetProfit || 0),
     Math.abs(summary?.grossProfit || 0),
@@ -339,25 +422,25 @@ function DashboardPage() {
         {
           label: 'Total Fees Paid',
           value: formatCurrency(summary.totalFeesPaid),
-          helper: '0.1% of sell value',
+          helper: feeModelHelper,
           tone: 'neutral'
         },
         {
           label: 'GST on Fees',
           value: formatCurrency(summary.totalGstOnFees),
-          helper: '18% applied on fees',
+          helper: '18% modeled on exchange/service fees',
           tone: 'neutral'
         },
         {
           label: 'TDS Deducted',
           value: formatCurrency(summary.totalTdsDeducted),
-          helper: '1% of sell value',
+          helper: '1% on transfer value; threshold rules may vary',
           tone: 'accent'
         },
         {
-          label: '30% Crypto Tax',
+          label: 'Base VDA Tax (30%)',
           value: formatCurrency(summary.totalCryptoTax),
-          helper: 'Positive gross profit only',
+          helper: 'Base 30% rate on positive gains; cess/surcharge may apply separately',
           tone: 'neutral'
         },
         {
@@ -692,6 +775,7 @@ function DashboardPage() {
           onToggleTheme={() => setTheme((currentValue) => (currentValue === 'dark' ? 'light' : 'dark'))}
           onUploadClick={triggerUpload}
           onDownloadSample={downloadSample}
+          onRecalculateCurrentFile={lastUploadedFile ? recalculateCurrentFile : null}
           onClearReport={clearReport}
           report={safeReport}
           processing={processing}
@@ -700,6 +784,13 @@ function DashboardPage() {
           warnings={warnings}
           sourceFile={currentFileName || safeReport?.meta?.sourceFile}
           processedAt={safeReport?.meta?.processedAt}
+          feeConfig={feeConfig}
+          onFeeRateChange={(value) =>
+            setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeRatePercent: value }))
+          }
+          onFeeAppliesToChange={(value) =>
+            setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeAppliesTo: value }))
+          }
           activeMobileTab={activeMobileTab}
           onActiveMobileTabChange={setActiveMobileTab}
           mobileMetricCards={mobileMetricCards}
@@ -757,9 +848,17 @@ function DashboardPage() {
               inputRef={inputRef}
               onFileSelected={handleFileSelected}
               onDownloadSample={downloadSample}
+              onRecalculate={lastUploadedFile ? recalculateCurrentFile : null}
               isProcessing={processing}
               currentFileName={currentFileName || safeReport?.meta?.sourceFile}
               stats={stats}
+              feeConfig={feeConfig}
+              onFeeRateChange={(value) =>
+                setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeRatePercent: value }))
+              }
+              onFeeAppliesToChange={(value) =>
+                setStoredFeeConfig((currentValue) => ({ ...normalizeFeeConfig(currentValue), feeAppliesTo: value }))
+              }
             />
 
             {processing ? <SkeletonGrid /> : null}

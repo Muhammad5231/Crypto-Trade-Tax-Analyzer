@@ -20,6 +20,7 @@ The project is designed as a finance-first dashboard for spot-market activity, w
 ## Core Features
 
 - FIFO trade matching by spot pair
+- configurable spot-platform fee model by percentage and fee side (`buy`, `sell`, or `both`)
 - realized trade table with filters, sorting, totals, and pagination
 - open holdings table for unmatched lots
 - KPI summary for buy value, sell value, profit, tax, and final net
@@ -31,7 +32,7 @@ The project is designed as a finance-first dashboard for spot-market activity, w
 
 ## Product Workflow
 
-1. Upload a CSV file from the dashboard.
+1. Upload a CSV file from the dashboard and set your spot-platform fee model.
 2. The backend parses and normalizes the file.
 3. Trades are grouped by spot pair and matched using FIFO.
 4. Summary totals, realized trades, open holdings, analytics, and warnings are generated.
@@ -45,12 +46,54 @@ The processing engine applies these rules:
 - `Buy Value = matched_qty * buy_price`
 - `Sell Value = matched_qty * sell_price`
 - `Gross Profit = sell_value - buy_value`
-- `Fees = 0.1% of sell value`
+- `Fees = platform fee % applied to buy value, sell value, or both depending on user input`
 - `GST on Fees = 18% of fees`
 - `TDS = 1% of sell value`
 - `30% Crypto Tax = applied only when gross profit is positive`
 - `Net Profit in Hand = gross_profit - fees - gst - tds - crypto_tax`
 - `Final Net Profit = net_profit_in_hand + tds`
+
+## India 2026 Tax and GST Notes
+
+As of **April 27, 2026**, this project is aligned to a practical India spot-trader review model based on the official VDA tax framework.
+
+### Official rule summary
+
+- VDA transfer income is taxed at **30%** under Section `115BBH`.
+- Only **cost of acquisition** is allowed; other deductions and VDA loss set-off are restricted under Section `115BBH`.
+- TDS on VDA transfer consideration is **1%** under Section `194S`.
+- Section `194S` also includes threshold rules:
+  - `Rs. 10,000` for most payers
+  - `Rs. 50,000` for specified persons
+- This app models **18% GST on exchange/service fees** as a practical spot-trader assumption for taxable service charges.
+
+### Important implementation note
+
+This app currently models:
+
+- configurable spot-platform fee percentage and fee side (`buy`, `sell`, or `both`)
+- base `30%` VDA tax on positive realized gain
+- `1%` TDS on transfer value
+- `18%` GST on exchange/service fees
+
+This app does **not** fully model every taxpayer-specific 2026 nuance, including:
+
+- surcharge
+- `4%` health and education cess
+- every threshold edge case under `194S`
+- special treatment needed for non-standard exchange flows
+- professional tax treatment outside the app's spot-trader workflow
+
+### Why the GST note is worded this way
+
+I am making an inference from official GST service-rate guidance rather than claiming there is a crypto-specific GST section for every spot trade scenario. The project treats GST as applying to the **exchange/service fee layer**, not as a blanket tax on the full traded value.
+
+### Official references
+
+- Income-tax Section `115BBH`: https://www.incometaxindia.gov.in/w/section-115bbh-2
+- Income-tax Section `194S`: https://incometaxindia.gov.in/Acts/Income-tax%20Act%2C%201961/2025/102120000000091302.htm
+- Income-tax FAQ on `194S` thresholds: https://www.incometaxindia.gov.in/w/is-there-any-minimum-amount-upto-which-tax-is-not-deducted-
+- CBIC GST services rate booklet (`18%` bucket for services guidance): https://cbic-gst.gov.in/pdf/services-booklet-03July2017.pdf
 
 ## CSV Input Requirements
 
@@ -261,6 +304,8 @@ Uploads and processes a CSV file using `multipart/form-data`.
 Request field:
 
 - `file`
+- optional `feeRatePercent`
+- optional `feeAppliesTo` (`buy`, `sell`, or `both`)
 
 Response sections:
 

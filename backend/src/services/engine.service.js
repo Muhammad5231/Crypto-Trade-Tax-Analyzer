@@ -8,12 +8,15 @@ Decimal.set({
 });
 
 const EPSILON = new Decimal('0.00000001');
-const SETTINGS = {
+const DEFAULT_SETTINGS = {
+  feeAppliesTo: 'sell',
+  feeRatePercent: new Decimal('0.1'),
   feeRate: new Decimal('0.001'),
   gstRate: new Decimal('0.18'),
   tdsRate: new Decimal('0.01'),
   taxRate: new Decimal('0.30')
 };
+const VALID_FEE_APPLICATIONS = new Set(['buy', 'sell', 'both']);
 
 const FIELD_ALIASES = {
   time: ['Time', 'time', 'Timestamp', 'timestamp', 'Date', 'date', 'DateTime'],
@@ -49,6 +52,16 @@ function parseDecimal(value, label) {
   }
 }
 
+function parseNonNegativeDecimal(value, label) {
+  const decimalValue = parseDecimal(value, label);
+
+  if (decimalValue.lt(0)) {
+    throw new Error(`${label} must be zero or greater`);
+  }
+
+  return decimalValue;
+}
+
 function toMoney(decimalValue) {
   return Number(new Decimal(decimalValue).toDecimalPlaces(2).toString());
 }
@@ -69,6 +82,23 @@ function determineSide(rawValue) {
   }
 
   throw new Error(`Unknown side: ${rawValue}`);
+}
+
+function resolveSettings(rawSettings = {}) {
+  const feeAppliesTo = VALID_FEE_APPLICATIONS.has(rawSettings.feeAppliesTo)
+    ? rawSettings.feeAppliesTo
+    : DEFAULT_SETTINGS.feeAppliesTo;
+  const feeRatePercent =
+    rawSettings.feeRatePercent === undefined || rawSettings.feeRatePercent === null || rawSettings.feeRatePercent === ''
+      ? DEFAULT_SETTINGS.feeRatePercent
+      : parseNonNegativeDecimal(rawSettings.feeRatePercent, 'fee rate');
+
+  return {
+    ...DEFAULT_SETTINGS,
+    feeAppliesTo,
+    feeRatePercent,
+    feeRate: feeRatePercent.div(100)
+  };
 }
 
 function hasSemanticHeader(headers, semanticKey) {
@@ -136,14 +166,22 @@ function normalizeTradeRow(row, index) {
   };
 }
 
-function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence) {
+function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence, settings) {
   const buyValue = matchedQty.mul(buyLot.execPrice);
   const sellValue = matchedQty.mul(sellTrade.execPrice);
   const grossProfit = sellValue.minus(buyValue);
-  const fees = sellValue.mul(SETTINGS.feeRate);
-  const gstOnFees = fees.mul(SETTINGS.gstRate);
-  const tds = sellValue.mul(SETTINGS.tdsRate);
-  const cryptoTax = grossProfit.gt(0) ? grossProfit.mul(SETTINGS.taxRate) : new Decimal(0);
+  const buySideFee =
+    settings.feeAppliesTo === 'buy' || settings.feeAppliesTo === 'both'
+      ? buyValue.mul(settings.feeRate)
+      : new Decimal(0);
+  const sellSideFee =
+    settings.feeAppliesTo === 'sell' || settings.feeAppliesTo === 'both'
+      ? sellValue.mul(settings.feeRate)
+      : new Decimal(0);
+  const fees = buySideFee.plus(sellSideFee);
+  const gstOnFees = fees.mul(settings.gstRate);
+  const tds = sellValue.mul(settings.tdsRate);
+  const cryptoTax = grossProfit.gt(0) ? grossProfit.mul(settings.taxRate) : new Decimal(0);
   const netProfitInHand = grossProfit.minus(fees).minus(gstOnFees).minus(tds).minus(cryptoTax);
   const finalNetProfit = netProfitInHand.plus(tds);
   const holdingDays = Math.max(
@@ -164,6 +202,8 @@ function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence) {
     buyValue: toMoney(buyValue),
     sellValue: toMoney(sellValue),
     grossProfit: toMoney(grossProfit),
+    buySideFee: toMoney(buySideFee),
+    sellSideFee: toMoney(sellSideFee),
     fees: toMoney(fees),
     gstOnFees: toMoney(gstOnFees),
     tds: toMoney(tds),
@@ -306,7 +346,8 @@ function buildAnalytics(realizedTrades, openPositions, summary) {
   };
 }
 
-function processNormalizedTrades(trades, warnings = []) {
+function processNormalizedTrades(trades, warnings = [], rawSettings = {}) {
+  const settings = resolveSettings(rawSettings);
   const groupedTrades = new Map();
   const realizedTrades = [];
   const openPositions = [];
@@ -338,7 +379,7 @@ function processNormalizedTrades(trades, warnings = []) {
         const currentBuy = buyQueue[0];
         const matchedQty = Decimal.min(currentBuy.remainingQty, remainingSell);
 
-        realizedTrades.push(buildRealizedTrade(contract, currentBuy, trade, matchedQty, tradeSequence));
+        realizedTrades.push(buildRealizedTrade(contract, currentBuy, trade, matchedQty, tradeSequence, settings));
 
         tradeSequence += 1;
         currentBuy.remainingQty = currentBuy.remainingQty.minus(matchedQty);
@@ -363,7 +404,12 @@ function processNormalizedTrades(trades, warnings = []) {
         continue;
       }
 
-      const totalInvested = buyLot.remainingQty.mul(buyLot.execPrice);
+      const remainingBuyValue = buyLot.remainingQty.mul(buyLot.execPrice);
+      const openBuyFee =
+        settings.feeAppliesTo === 'buy' || settings.feeAppliesTo === 'both'
+          ? remainingBuyValue.mul(settings.feeRate)
+          : new Decimal(0);
+      const totalInvested = remainingBuyValue.plus(openBuyFee);
 
       openPositions.push({
         id: `${contract}-open-${buyLot.rowNumber}`,
@@ -372,6 +418,7 @@ function processNormalizedTrades(trades, warnings = []) {
         buyDateTime: formatDateTime(buyLot.time),
         unsoldQty: toQuantity(buyLot.remainingQty),
         avgBuyPrice: toMoney(buyLot.execPrice),
+        buySideFee: toMoney(openBuyFee),
         totalInvested: toMoney(totalInvested)
       });
     }
@@ -385,7 +432,11 @@ function processNormalizedTrades(trades, warnings = []) {
     contractCount: contracts.length,
     realizedTradesCount: realizedTrades.length,
     openPositionsCount: openPositions.length,
-    processedAt: formatDateTime(new Date())
+    processedAt: formatDateTime(new Date()),
+    feeModel: {
+      feeRatePercent: Number(settings.feeRatePercent.toDecimalPlaces(4).toString()),
+      feeAppliesTo: settings.feeAppliesTo
+    }
   };
 
   return {

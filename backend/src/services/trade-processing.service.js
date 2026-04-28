@@ -3,7 +3,7 @@ const { AppError } = require('../utils/app-error');
 const { parseCsvBuffer } = require('../utils/csv');
 const { normalizeTradeRow, processNormalizedTrades, shouldSkipTradeRow, validateHeaders } = require('./engine.service');
 
-function processTradeUpload(fileBuffer) {
+function processTradeUpload(fileBuffer, options = {}) {
   const { encodingUsed, headers, parseErrors, rows } = parseCsvBuffer(fileBuffer);
   const missingFields = validateHeaders(headers);
 
@@ -37,7 +37,7 @@ function processTradeUpload(fileBuffer) {
     });
   }
 
-  const report = processNormalizedTrades(normalizedTrades, warnings);
+  const report = processNormalizedTrades(normalizedTrades, warnings, options);
 
   report.meta = {
     ...report.meta,
