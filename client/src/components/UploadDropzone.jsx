@@ -141,23 +141,6 @@ function UploadDropzone({
             </div>
           </div>
 
-          <div className="ambient-surface-strong relative overflow-hidden rounded-[28px] border-sky-100/80 px-5 py-5 text-slate-800 dark:border-white/10 dark:text-white">
-            <div className="pointer-events-none absolute -right-10 top-2 h-24 w-24 rounded-full bg-sky-500/8 blur-3xl dark:bg-sky-500/8" />
-            <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-mint-500/8 blur-3xl dark:bg-mint-500/7" />
-
-            <div className="relative">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                Processing Flow
-              </p>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              <p>1. Validate CSV structure and safely skip malformed rows.</p>
-              <p>2. Parse timestamps, quantities, and prices with finance-safe handling.</p>
-              <p>3. Match spot buys and sells using FIFO for realized P&amp;L.</p>
-              <p>4. Apply saved exchange fees, GST on fees, TDS, and base spot-tax deductions.</p>
-            </div>
-          </div>
-          </div>
-
           <div className="ambient-surface rounded-[28px] p-5">
             <div className="flex items-start gap-3">
               <div className="rounded-2xl bg-copper-500/12 p-3 text-copper-600 dark:text-copper-300">

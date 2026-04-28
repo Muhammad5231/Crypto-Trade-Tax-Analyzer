@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import AppHeader from '../components/AppHeader';
+import CalculationGuideSection from '../components/CalculationGuideSection';
 import DataTable from '../components/DataTable';
 import EmptyState from '../components/EmptyState';
 import ExportMenu from '../components/ExportMenu';
@@ -88,7 +89,7 @@ function formatFeeRatePercent(value) {
 }
 
 function getFeeModelSummary(feeModel) {
-  return `Buy ${formatFeeRatePercent(feeModel.buyFeePercent)}% · Sell ${formatFeeRatePercent(feeModel.sellFeePercent)}%`;
+  return `Buy ${formatFeeRatePercent(feeModel.buyFeePercent)}% / Sell ${formatFeeRatePercent(feeModel.sellFeePercent)}%`;
 }
 
 function getProfileUploadPayload(profile) {
@@ -1015,6 +1016,8 @@ function DashboardPage() {
               profile={profile}
             />
 
+            <CalculationGuideSection />
+
             {processing ? <SkeletonGrid /> : null}
 
             {warnings.length ? (
@@ -1071,9 +1074,9 @@ function DashboardPage() {
                               before you move into detailed FIFO review.
                             </p>
                           </div>
-                          <div className="space-y-3">
+                          <div className="flex w-full flex-col gap-3 lg:max-w-[17rem] lg:items-end">
                             <div
-                              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${
+                              className={`inline-flex items-center gap-2 self-start rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] lg:self-end ${
                                 summary.finalNetProfit >= 0
                                   ? isDarkTheme
                                     ? 'bg-mint-500/20 text-mint-100'
@@ -1091,7 +1094,7 @@ function DashboardPage() {
                               <span>{summary.finalNetProfit >= 0 ? 'Net Positive' : 'Net Negative'}</span>
                             </div>
                             <div
-                              className={`rounded-[22px] border px-4 py-3 text-sm ${
+                              className={`w-full rounded-[22px] border px-4 py-3 text-sm ${
                                 isDarkTheme ? 'border-white/10 bg-white/[0.08]' : 'border-slate-200/80 bg-white/80 shadow-[0_16px_35px_rgba(148,163,184,0.12)]'
                               }`}
                             >

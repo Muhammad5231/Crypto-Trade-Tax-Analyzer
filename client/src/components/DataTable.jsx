@@ -56,7 +56,7 @@ function DataTable({
   return (
     <div className="space-y-4">
       <div className="ambient-surface-strong overflow-hidden rounded-[24px]">
-        <div className="max-h-[34rem] overflow-auto scrollbar-thin">
+        <div className="overflow-x-auto overflow-y-visible scrollbar-thin">
           <table className={`w-full ${minTableWidth} divide-y divide-slate-200 text-sm dark:divide-white/10`}>
             <thead className="ambient-table-head sticky top-0 z-10">
               <tr>

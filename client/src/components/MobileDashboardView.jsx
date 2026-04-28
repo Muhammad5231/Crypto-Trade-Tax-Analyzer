@@ -3,10 +3,10 @@ import {
   ArrowRightLeft,
   BarChart3,
   CircleAlert,
-  Clock3,
   FileSpreadsheet,
   LayoutDashboard,
   MoonStar,
+  PencilLine,
   ShieldCheck,
   SunMedium,
   TrendingUp,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import AnalyticsPanel from './AnalyticsPanel';
+import CalculationGuideSection from './CalculationGuideSection';
 import ExportMenu from './ExportMenu';
 import FilterBar from './FilterBar';
 import MobileBottomNav from './MobileBottomNav';
@@ -33,14 +34,14 @@ const MOBILE_TABS = [
 function MobilePrimaryAction({ children, icon: Icon, onClick, tone = 'dark', className = '' }) {
   const toneClass =
     tone === 'light'
-      ? 'bg-white text-slate-900 hover:bg-slate-100'
-      : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-mint-500 dark:text-slate-900 dark:hover:bg-mint-300';
+      ? 'bg-white text-slate-900 shadow-soft hover:bg-slate-100'
+      : 'bg-slate-900 text-white shadow-soft hover:bg-slate-800 dark:bg-mint-500 dark:text-slate-900 dark:hover:bg-mint-300';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition ${toneClass} ${className}`}
+      className={`inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-[20px] px-4 py-3 text-sm font-semibold transition ${toneClass} ${className}`}
     >
       {Icon ? <Icon className="h-4 w-4" /> : null}
       <span>{children}</span>
@@ -63,7 +64,7 @@ function MobileIconAction({ icon: Icon, onClick, label, tone = 'neutral', invert
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl border transition ${
+      className={`inline-flex h-[3.2rem] w-[3.2rem] items-center justify-center rounded-[20px] border transition ${
         inverted ? 'bg-white/[0.04]' : 'bg-white/60 dark:bg-white/[0.04]'
       } ${toneClass}`}
     >
@@ -86,7 +87,7 @@ function MobileSecondaryAction({ children, icon: Icon, onClick, tone = 'neutral'
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${toneClass}`}
+      className={`inline-flex min-h-[3.15rem] items-center justify-center gap-2 rounded-[20px] border px-4 py-3 text-sm font-semibold transition ${toneClass}`}
     >
       {Icon ? <Icon className="h-4 w-4" /> : null}
       <span>{children}</span>
@@ -110,7 +111,7 @@ function MobileInlineChip({ children, icon: Icon, tone = 'neutral', inverted = f
   const activeTone = toneClasses[tone] || toneClasses.neutral;
 
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${activeTone}`}>
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${activeTone}`}>
       {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
       <span className="whitespace-nowrap">{children}</span>
     </span>
@@ -119,8 +120,8 @@ function MobileInlineChip({ children, icon: Icon, tone = 'neutral', inverted = f
 
 function MobileHeaderStat({ label, value, helper, valueClassName = 'text-xl', truncateValue = false, inverted = false }) {
   const wrapperClass = inverted
-    ? 'ambient-surface-soft min-h-[108px] rounded-[24px] border border-white/[0.08] p-3.5'
-    : 'min-h-[108px] rounded-[24px] border border-slate-200/80 bg-white/[0.55] p-3.5 shadow-soft backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.05]';
+    ? 'ambient-surface-soft min-h-[112px] rounded-[24px] border border-white/[0.08] p-3.5'
+    : 'min-h-[112px] rounded-[24px] border border-slate-200/80 bg-white/[0.58] p-3.5 shadow-soft backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.05]';
   const labelClass = inverted
     ? 'text-slate-400'
     : 'text-slate-500 dark:text-slate-400';
@@ -212,13 +213,13 @@ function MobileSectionCard({ eyebrow, title, description, action, children, clas
     <section className={`glass-panel relative overflow-hidden p-4 ${className}`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-mint-500/8 via-transparent to-sky-500/8" />
       <div className="relative">
-        <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10">
+        <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-200/70 pb-3 dark:border-white/10">
           <div>
             {eyebrow ? (
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{eyebrow}</p>
             ) : null}
-            <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{title}</h2>
-            {description ? <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p> : null}
+            <h2 className="mt-1 font-display text-[1.15rem] font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+            {description ? <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p> : null}
           </div>
           {action}
         </div>
@@ -228,11 +229,26 @@ function MobileSectionCard({ eyebrow, title, description, action, children, clas
   );
 }
 
+function MobileDateBlock({ label, value }) {
+  const formatted = formatDateTime(value);
+  const [datePart, ...rest] = formatted.split(',');
+  const timePart = rest.join(',').trim();
+
+  return (
+    <div className="ambient-surface-soft rounded-2xl px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{datePart?.trim() || formatted}</p>
+      {timePart ? <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">{timePart}</p> : null}
+    </div>
+  );
+}
+
 function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
   return (
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
-      <div className="pointer-events-none absolute -left-6 top-0 h-20 w-20 rounded-full bg-sky-500/8 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-mint-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-sky-500/8 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-mint-500/8 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-20 w-20 rounded-full bg-violet-500/6 blur-3xl" />
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -249,15 +265,9 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
           </span>
         </div>
 
-        <div className="mt-3 grid gap-2">
-          <div className="ambient-surface-soft rounded-2xl px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Buy</p>
-            <p className="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{formatDateTime(trade.buyDateTime)}</p>
-          </div>
-          <div className="ambient-surface-soft rounded-2xl px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Sell</p>
-            <p className="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{formatDateTime(trade.sellDateTime)}</p>
-          </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <MobileDateBlock label="Buy" value={trade.buyDateTime} />
+          <MobileDateBlock label="Sell" value={trade.sellDateTime} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -322,6 +332,7 @@ function MobileHoldingCard({ position }) {
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
       <div className="pointer-events-none absolute -left-6 top-0 h-20 w-20 rounded-full bg-copper-500/8 blur-3xl" />
       <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-sky-500/8 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-20 w-20 rounded-full bg-violet-500/5 blur-3xl" />
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -332,9 +343,8 @@ function MobileHoldingCard({ position }) {
           </span>
         </div>
 
-        <div className="mt-3 ambient-surface-soft rounded-2xl px-3 py-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Buy Date</p>
-          <p className="mt-1 text-xs leading-5 text-slate-700 dark:text-slate-200">{formatDateTime(position.buyDateTime)}</p>
+        <div className="mt-3">
+          <MobileDateBlock label="Buy Date" value={position.buyDateTime} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -532,13 +542,15 @@ function MobileDashboardView({
   const reportFeeModel = report?.meta?.feeModel || profile;
   const showBuyFee = Number(reportFeeModel?.buyFeePercent || 0) > 0;
   const showSellFee = Number(reportFeeModel?.sellFeePercent || 0) > 0;
+  const activeExchangeLabel = reportFeeModel?.exchangeName || profile?.exchangeName || 'Saved setup';
+  const activeFeeSummary = `Buy ${Number(reportFeeModel?.buyFeePercent || 0)}% / Sell ${Number(reportFeeModel?.sellFeePercent || 0)}%`;
 
   return (
     <div className="space-y-4 pb-32 lg:hidden">
       {showMobileHeader ? (
       <section id="mobile-upload-panel" className="glass-panel overflow-hidden p-3">
         <div
-          className={`relative overflow-hidden rounded-[32px] p-5 ${
+          className={`relative overflow-hidden rounded-[30px] p-4 ${
             isDark
               ? 'bg-gradient-to-br from-slate-900 via-[#0c1e31] to-[#091525] text-white'
               : 'border border-white/70 bg-gradient-to-br from-white via-[#f4f8fd] to-[#e7eff9] text-slate-900 shadow-[0_24px_60px_rgba(148,163,184,0.18)]'
@@ -549,10 +561,13 @@ function MobileDashboardView({
           <div className="pointer-events-none absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-mint-500/14 blur-3xl" />
 
           <div className="relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1 pr-2">
-                <h1 className="font-display text-[30px] font-bold leading-none">
-                  {hasReport ? 'Crypto tax review' : 'Import your spot trade history'}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-mint-300' : 'text-mint-700'}`}>
+                  Spot Trading Workspace
+                </p>
+                <h1 className="mt-2 max-w-[15rem] font-display text-[2rem] font-bold leading-[0.98] tracking-tight">
+                  Crypto Trade Tax Analyzer
                 </h1>
                 <p className={`mt-3 max-w-xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                   {hasReport
@@ -561,7 +576,7 @@ function MobileDashboardView({
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 pt-0.5">
+              <div className="ambient-surface-soft flex shrink-0 items-center gap-2 rounded-[22px] p-1.5 pt-1.5">
                 <MobileIconAction
                   icon={theme === 'dark' ? SunMedium : MoonStar}
                   onClick={onToggleTheme}
@@ -588,24 +603,42 @@ function MobileDashboardView({
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={onOpenProfile}
-                className={`rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
-                  isDark
-                    ? 'border border-white/10 bg-white/[0.06] text-slate-200 hover:border-mint-400/40 hover:text-white'
-                    : 'border border-slate-200/80 bg-white/88 text-slate-700 hover:border-mint-500 hover:text-slate-900'
-                }`}
-              >
-                Edit Profile
-              </button>
+            <div className={`mt-4 rounded-[24px] border px-3.5 py-3 ${
+              isDark
+                ? 'border-white/10 bg-white/[0.05]'
+                : 'border-slate-200/80 bg-white/72'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Saved setup
+                  </p>
+                  <p className={`mt-1 truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {activeExchangeLabel}
+                  </p>
+                  <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {activeFeeSummary}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenProfile}
+                  className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition ${
+                    isDark
+                      ? 'border-white/10 bg-white/[0.06] text-slate-200 hover:border-mint-400/40 hover:text-white'
+                      : 'border-slate-200/80 bg-white/88 text-slate-700 hover:border-mint-500 hover:text-slate-900'
+                  }`}
+                  aria-label="Edit saved setup"
+                >
+                  <PencilLine className="h-4 w-4" />
+                </button>
+              </div>
               {onRecalculateCurrentFile ? (
                 <button
                   type="button"
                   onClick={onRecalculateCurrentFile}
                   disabled={processing}
-                  className={`rounded-full px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                  className={`mt-3 inline-flex w-full items-center justify-center rounded-[18px] px-4 py-2.5 text-sm font-semibold transition ${
                     processing
                       ? 'cursor-not-allowed bg-slate-400/20 text-slate-400'
                       : isDark
@@ -613,7 +646,7 @@ function MobileDashboardView({
                         : 'border border-slate-200/80 bg-white/88 text-slate-700 hover:border-mint-500 hover:text-slate-900'
                   }`}
                 >
-                  Recalculate File
+                  Recalculate current file
                 </button>
               ) : null}
             </div>
@@ -649,9 +682,6 @@ function MobileDashboardView({
               <MobileInlineChip icon={CircleAlert} tone={warnings.length ? 'warning' : 'neutral'} inverted={isDark}>
                 {warnings.length} warnings
               </MobileInlineChip>
-              <MobileInlineChip icon={Clock3} inverted={isDark}>
-                {processedAt || 'Waiting'}
-              </MobileInlineChip>
             </div>
           </div>
         </div>
@@ -670,13 +700,16 @@ function MobileDashboardView({
       ) : null}
 
       {!hasReport && !processing ? (
-        <MobileOnboarding
-          onUploadClick={onUploadClick}
-          onDownloadSample={onDownloadSample}
-          processing={processing}
-          sourceFile={sourceFile}
-          theme={theme}
-        />
+        <>
+          <MobileOnboarding
+            onUploadClick={onUploadClick}
+            onDownloadSample={onDownloadSample}
+            processing={processing}
+            sourceFile={sourceFile}
+            theme={theme}
+          />
+          <CalculationGuideSection compact />
+        </>
       ) : null}
 
       {hasReport ? (
@@ -759,6 +792,8 @@ function MobileDashboardView({
                   <span className="ambient-pill rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">Open positions included</span>
                 </div>
               </MobileSectionCard>
+
+              <CalculationGuideSection compact />
             </div>
           ) : null}
 
@@ -800,14 +835,16 @@ function MobileDashboardView({
               </MobileSectionCard>
 
               {mobileTradeHighlights.length ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {mobileTradeHighlights.map((item) => (
+                <div className="grid grid-cols-2 gap-3">
+                  {mobileTradeHighlights.map((item, index) => (
                     <MobileMetricTile
                       key={item.label}
                       label={item.label}
                       value={item.value}
                       tone={item.tone}
-                      className="min-h-[96px]"
+                      className={`min-h-[96px] ${
+                        mobileTradeHighlights.length % 2 === 1 && index === mobileTradeHighlights.length - 1 ? 'col-span-2' : ''
+                      }`}
                     />
                   ))}
                 </div>
@@ -882,14 +919,16 @@ function MobileDashboardView({
               </MobileSectionCard>
 
               {mobileHoldingHighlights.length ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {mobileHoldingHighlights.map((item) => (
+                <div className="grid grid-cols-2 gap-3">
+                  {mobileHoldingHighlights.map((item, index) => (
                     <MobileMetricTile
                       key={item.label}
                       label={item.label}
                       value={item.value}
                       tone={item.tone}
-                      className="min-h-[96px]"
+                      className={`min-h-[96px] ${
+                        mobileHoldingHighlights.length % 2 === 1 && index === mobileHoldingHighlights.length - 1 ? 'col-span-2' : ''
+                      }`}
                     />
                   ))}
                 </div>

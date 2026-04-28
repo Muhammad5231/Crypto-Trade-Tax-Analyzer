@@ -28,6 +28,7 @@ The project is designed as a finance-first dashboard for spot-market activity, w
 - CSV export containing metadata, summary, realized trades, and open holdings
 - safe warning handling for malformed rows and unmatched sell quantities
 - responsive desktop and mobile UI with dedicated mobile tab flow
+- in-app documentation section that explains the calculation model in easy English
 - fintech-style animated background that stays subtle behind the data
 
 ## Product Workflow
@@ -57,9 +58,21 @@ The processing engine applies these rules:
 - `Net Profit in Hand = gross_profit - fees - gst - tds - crypto_tax`
 - `Final Net Profit = net_profit_in_hand + tds`
 
+### Easy-English explanation
+
+- each sell is matched against the oldest available buy of the same spot pair
+- this is FIFO: first in, first out
+- if a buy is only partly used, the leftover quantity stays in `Open Holdings`
+- exchange fees come from the user's saved profile:
+  - `Buy Fee %` is applied to matched buy value
+  - `Sell Fee %` is applied to matched sell value
+- GST is applied to the fee layer, not to the full trade value
+- TDS is shown separately because it is tax withheld from the transaction, not a trading fee
+- the dashboard adds TDS back in `Final Net Profit` so the user can see the economic result separately from the withheld tax credit
+
 ## India 2026 Tax and GST Notes
 
-As of **April 27, 2026**, this project is aligned to a practical India spot-trader review model based on the official VDA tax framework.
+As of **April 28, 2026**, this project is aligned to a practical India spot-trader review model based on the official VDA tax framework.
 
 ### Official rule summary
 
@@ -79,6 +92,16 @@ This app currently models:
 - base `30%` VDA tax on positive realized gain
 - `1%` TDS on transfer value
 - `18%` GST on exchange/service fees
+
+### In-app documentation section
+
+The live website now includes a documentation section inside the dashboard UI. It explains:
+
+- how FIFO matching works
+- how saved buy and sell fee percentages are applied
+- how GST on fees is treated
+- how the India 2026 crypto spot-tax model is interpreted in this app
+- where professional review may still be needed
 
 This app does **not** fully model every taxpayer-specific 2026 nuance, including:
 

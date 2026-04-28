@@ -16,11 +16,17 @@ function AppHeader({
   processedAt
 }) {
   return (
-    <header className="glass-panel grid-panel sticky top-4 z-30 mb-6 overflow-hidden px-5 py-5 sm:px-7">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-mint-500/10 via-sky-500/7 to-copper-500/8" />
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <header className="glass-panel sticky top-4 z-30 mb-6 overflow-hidden px-5 py-6 sm:px-7">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-mint-500/8 via-sky-500/6 to-copper-500/7" />
+      <div className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-full bg-sky-500/8 blur-3xl" />
+      <div className="pointer-events-none absolute left-0 bottom-0 h-32 w-32 rounded-full bg-mint-500/7 blur-3xl" />
+
+      <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-4">
           <div className="max-w-3xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-mint-600 dark:text-mint-300">
+              Spot Trading Workspace
+            </p>
             <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               Crypto Trade Tax Analyzer
             </h1>
@@ -29,21 +35,22 @@ function AppHeader({
               inspect open holdings, and review a polished analytics workspace built for serious spot traders.
             </p>
           </div>
+
           <div className="flex flex-wrap gap-3">
-            <div className="ambient-surface rounded-[22px] px-4 py-3">
+            <div className="ambient-surface min-w-[8.5rem] rounded-[22px] px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Valid Trades</p>
               <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{stats?.validTrades || 0}</p>
             </div>
-            <div className="ambient-surface rounded-[22px] px-4 py-3">
+            <div className="ambient-surface min-w-[6.5rem] rounded-[22px] px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Realized</p>
               <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{stats?.realizedTradesCount || 0}</p>
             </div>
-            <div className="ambient-surface rounded-[22px] px-4 py-3">
+            <div className="ambient-surface min-w-[8.5rem] rounded-[22px] px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Open Holdings</p>
               <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">{stats?.openPositionsCount || 0}</p>
             </div>
             {(sourceFile || processedAt) ? (
-              <div className="ambient-surface rounded-[22px] border-mint-500/20 bg-gradient-to-r from-mint-500/10 to-sky-500/8 px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
+              <div className="ambient-surface min-w-[20rem] rounded-[22px] border-mint-500/20 bg-gradient-to-r from-mint-500/10 to-sky-500/8 px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Session Source</p>
                 {sourceFile ? <p className="mt-1 max-w-[18rem] truncate font-semibold">{sourceFile}</p> : null}
                 {processedAt ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Processed: {processedAt}</p> : null}
@@ -52,39 +59,39 @@ function AppHeader({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:max-w-[26rem]">
-          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        <div className="ambient-surface-soft flex max-w-[28rem] flex-wrap items-center gap-3 self-center rounded-[28px] p-2.5 xl:justify-end">
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
 
-          <button
-            type="button"
-            onClick={onDownloadSample}
-            className="ambient-pill inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-copper-500 hover:text-slate-900 dark:text-slate-200 dark:hover:border-copper-300"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Sample CSV
-          </button>
-
-          <button
-            type="button"
-            onClick={onUploadClick}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800 dark:bg-mint-500 dark:text-slate-900 dark:hover:bg-mint-300"
-          >
-            <Upload className="h-4 w-4" />
-            Upload CSV
-          </button>
-
-          <ExportMenu report={report} sourceFile={sourceFile} processedAt={processedAt} />
-
-          {hasReport ? (
             <button
               type="button"
-              onClick={onClear}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-coral-300 bg-coral-100 px-4 py-2.5 text-sm font-semibold text-coral-700 transition hover:bg-coral-200 dark:border-coral-500/40 dark:bg-coral-500/10 dark:text-coral-200 dark:hover:bg-coral-500/20"
+              onClick={onDownloadSample}
+              className="ambient-pill inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-copper-500 hover:text-slate-900 dark:text-slate-200 dark:hover:border-copper-300"
             >
-              <RefreshCw className="h-4 w-4" />
-              Clear
+              <FileSpreadsheet className="h-4 w-4" />
+              Sample CSV
             </button>
-          ) : null}
+
+            <button
+              type="button"
+              onClick={onUploadClick}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-slate-800 dark:bg-mint-500 dark:text-slate-900 dark:hover:bg-mint-300"
+            >
+              <Upload className="h-4 w-4" />
+              Upload CSV
+            </button>
+
+            <ExportMenu report={report} sourceFile={sourceFile} processedAt={processedAt} />
+
+            {hasReport ? (
+              <button
+                type="button"
+                onClick={onClear}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-coral-300 bg-coral-100 px-4 py-2.5 text-sm font-semibold text-coral-700 transition hover:bg-coral-200 dark:border-coral-500/40 dark:bg-coral-500/10 dark:text-coral-200 dark:hover:bg-coral-500/20"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Clear
+              </button>
+            ) : null}
         </div>
       </div>
     </header>
