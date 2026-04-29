@@ -215,7 +215,7 @@ function MobileSectionCard({ eyebrow, title, description, action, children, clas
       <div className="relative">
         <div className="relative mb-3 border-b border-slate-200/70 pb-3 dark:border-white/10">
           {action ? <div className="absolute right-0 top-0 z-[1]">{action}</div> : null}
-          <div className={action ? 'pr-24' : ''}>
+          <div className={action ? 'pr-[8.25rem]' : ''}>
             {eyebrow ? (
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{eyebrow}</p>
             ) : null}
