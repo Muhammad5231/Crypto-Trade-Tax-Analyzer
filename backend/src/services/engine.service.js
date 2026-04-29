@@ -23,11 +23,11 @@ const DEFAULT_SETTINGS = {
 const FIELD_ALIASES = {
   time: ['Time', 'time', 'Timestamp', 'timestamp', 'Date', 'date', 'DateTime'],
   contract: ['Contract', 'contract', 'Symbol', 'symbol', 'Pair', 'Instrument'],
-  qty: ['Qty', 'qty', 'Quantity', 'quantity', 'Amount', 'Size'],
+  qty: ['Qty', 'qty', 'Quantity', 'quantity', 'Amount', 'Size', 'Filled Qty', 'filled_qty'],
   side: ['Side', 'side', 'Type', 'type', 'Action'],
   execPrice: ['Exec.Price', 'Exec Price', 'Price', 'price', 'Execution Price', 'Rate', 'exec_price'],
   orderValue: ['Order Value', 'order_value', 'Value', 'value', 'Total'],
-  fees: ['Trading Fees', 'Fees', 'fees', 'Commission', 'commission'],
+  fees: ['Trading Fees', 'Fees', 'fees', 'Commission', 'commission', 'Fees paid', 'fees_paid'],
   status: ['Status', 'status', 'Order Status', 'order_status']
 };
 

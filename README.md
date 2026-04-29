@@ -181,10 +181,12 @@ The parser accepts common variants such as:
 
 - `Timestamp`
 - `Quantity`
+- `Filled Qty`
 - `Price`
 - `Symbol`
 - `Order Value`
 - `Fees`
+- `Fees paid`
 - `Commission`
 
 ### Sample input

@@ -79,3 +79,19 @@ test('processTradeUpload applies configurable buy-side spot fees and carries the
     sellFeePercent: 0
   });
 });
+
+test('processTradeUpload supports Delta trade-history CSV headers with Filled Qty and Fees paid', () => {
+  const csv = `Time,Contract,Fill Type,Filled Qty,Exec.Price,Value Notional,Value,Fill ID,Side,Fee rate,Rebate,Fees paid,Order Type,Order Price,Order Qty,Unfilled Qty,Order ID,Client Order ID,Status
+2026-04-26 12:16:39.705878+05:30 IST Asia/Kolkata,BTC_INR,normal,0.0001,7454045.5000,0.0001,0.0001,fd361bd12f1b4bffb6d05f5240c82b00,buy,0,0,0,market_order,7603135.5,0.0001,0.0000,1290983956,,cleared
+2026-04-27 06:41:28.030904+05:30 IST Asia/Kolkata,BTC_INR,normal,0.0001,7556980.0000,0.0001,0.0001,1c22f037e3644aa384c5ac03eb59a594,sell,0.0009,0,0.802551276,market_order,7405793.9,0.0001,0.0000,1291761729,,cleared`;
+
+  const report = processTradeUpload(Buffer.from(csv, 'utf8'));
+
+  assert.equal(report.meta.validTrades, 2);
+  assert.equal(report.realizedTrades.length, 1);
+  assert.equal(report.realizedTrades[0].contract, 'BTC_INR');
+  assert.equal(report.realizedTrades[0].matchedQty, 0.0001);
+  assert.equal(report.realizedTrades[0].buyDateTime, '2026-04-26 12:16:39');
+  assert.equal(report.realizedTrades[0].sellDateTime, '2026-04-27 06:41:28');
+  assert.equal(report.warnings.length, 0);
+});
