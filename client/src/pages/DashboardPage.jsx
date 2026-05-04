@@ -170,6 +170,38 @@ function renderStackedDateTime(value) {
   );
 }
 
+function renderTradeOutcomeTags(row) {
+  const outcomeTags = [
+    {
+      key: 'gross',
+      label: `Gross: ${row.grossResultLabel || (row.grossProfit >= 0 ? 'WIN' : 'LOSS')}`,
+      positive: (row.grossResultLabel || (row.grossProfit >= 0 ? 'WIN' : 'LOSS')) === 'WIN'
+    },
+    {
+      key: 'net',
+      label: `Net: ${row.netResultLabel || row.resultLabel || (row.finalNetProfit >= 0 ? 'WIN' : 'LOSS')}`,
+      positive: (row.netResultLabel || row.resultLabel || (row.finalNetProfit >= 0 ? 'WIN' : 'LOSS')) === 'WIN'
+    }
+  ];
+
+  return (
+    <div className="flex min-w-[10rem] flex-wrap gap-2">
+      {outcomeTags.map((tag) => (
+        <span
+          key={tag.key}
+          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
+            tag.positive
+              ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
+              : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
+          }`}
+        >
+          {tag.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function SnapshotFeatureCard({ eyebrow, title, value, description, tone = 'neutral' }) {
   const toneClasses = {
     positive: 'border-mint-500/20 bg-mint-500/10',
@@ -478,13 +510,20 @@ function DashboardPage() {
     0
   );
   const totalTaxLoad = summary
-    ? (summary.totalFeesPaid || 0) + (summary.totalGstOnFees || 0) + (summary.totalTdsDeducted || 0) + (summary.totalCryptoTax || 0)
+    ? (summary.totalFeesPaid || 0) +
+      (summary.totalGstOnFees || 0) +
+      (summary.totalTdsDeducted || 0) +
+      (summary.totalTaxAmount || (summary.totalCryptoTax || 0) + (summary.totalCessAmount || 0))
     : 0;
   const activeSourceFile = currentFileName || safeReport?.meta?.sourceFile || 'No source attached';
   const appliedFeeModel = safeReport?.meta?.feeModel || profile;
   const feeModelHelper = `${appliedFeeModel.exchangeName || 'Exchange profile'} · ${getFeeModelSummary(appliedFeeModel)}`;
-  const showBuyFeeColumn = Number(appliedFeeModel.buyFeePercent || 0) > 0;
-  const showSellFeeColumn = Number(appliedFeeModel.sellFeePercent || 0) > 0;
+  const hasBuyFeesInReport =
+    (safeReport?.realizedTrades || []).some((trade) => Number(trade.buySideFee || 0) > 0) ||
+    (safeReport?.openPositions || []).some((position) => Number(position.buySideFee || 0) > 0);
+  const hasSellFeesInReport = (safeReport?.realizedTrades || []).some((trade) => Number(trade.sellSideFee || 0) > 0);
+  const showBuyFeeColumn = Number(appliedFeeModel.buyFeePercent || 0) > 0 || hasBuyFeesInReport;
+  const showSellFeeColumn = Number(appliedFeeModel.sellFeePercent || 0) > 0 || hasSellFeesInReport;
   const snapshotComparisonBase = Math.max(
     Math.abs(summary?.finalNetProfit || 0),
     Math.abs(summary?.grossProfit || 0),
@@ -566,7 +605,13 @@ function DashboardPage() {
         {
           label: 'Base VDA Tax (30%)',
           value: formatCurrency(summary.totalCryptoTax),
-          helper: 'Base 30% rate on positive gains; cess/surcharge may apply separately',
+          helper: 'Base 30% rate on positive realized gains',
+          tone: 'neutral'
+        },
+        {
+          label: 'Health & Education Cess (4%)',
+          value: formatCurrency(summary.totalCessAmount || 0),
+          helper: 'Calculated strictly on the 30% base tax amount',
           tone: 'neutral'
         },
         {
@@ -625,7 +670,7 @@ function DashboardPage() {
         },
         {
           title: 'Tax Load',
-          description: 'Combined cost of fees, GST, TDS, and direct crypto tax in this report.',
+          description: 'Combined cost of fees, GST, TDS, base crypto tax, and 4% cess in this report.',
           value: formatCurrency(totalTaxLoad),
           tone: totalTaxLoad > 0 ? 'accent' : 'neutral'
         },
@@ -646,6 +691,13 @@ function DashboardPage() {
       initialDirection: 'asc',
       cellClassName: 'min-w-[7rem]',
       footer: (row) => row.label
+    },
+    {
+      key: 'tradeOutcome',
+      label: 'Status',
+      sortable: false,
+      render: (row) => renderTradeOutcomeTags(row),
+      cellClassName: 'min-w-[11rem]'
     },
     {
       key: 'sellDateTime',
@@ -744,6 +796,13 @@ function DashboardPage() {
       footer: (row) => formatCurrency(row.cryptoTax)
     },
     {
+      key: 'cessAmount',
+      label: '4% Cess',
+      align: 'right',
+      render: (row) => formatCurrency(row.cessAmount || 0),
+      footer: (row) => formatCurrency(row.cessAmount || 0)
+    },
+    {
       key: 'finalNetProfit',
       label: 'Final Net',
       align: 'right',
@@ -814,6 +873,8 @@ function DashboardPage() {
         gstOnFees: accumulator.gstOnFees + trade.gstOnFees,
         tds: accumulator.tds + trade.tds,
         cryptoTax: accumulator.cryptoTax + trade.cryptoTax,
+        cessAmount: accumulator.cessAmount + (trade.cessAmount || 0),
+        totalTaxAmount: accumulator.totalTaxAmount + (trade.totalTaxAmount || trade.cryptoTax + (trade.cessAmount || 0)),
         finalNetProfit: accumulator.finalNetProfit + trade.finalNetProfit
       }),
       {
@@ -828,6 +889,8 @@ function DashboardPage() {
         gstOnFees: 0,
         tds: 0,
         cryptoTax: 0,
+        cessAmount: 0,
+        totalTaxAmount: 0,
         finalNetProfit: 0
       }
     );
@@ -1276,7 +1339,7 @@ function DashboardPage() {
                       footerRow={realizedTotals}
                       defaultSortKey="sellDateTime"
                       defaultSortDirection="desc"
-                      minTableWidth="min-w-[1230px]"
+      minTableWidth="min-w-[1390px]"
                       emptyTitle="No realized trades match this filter"
                       emptyDescription="Try clearing search text, choosing a different pair, or widening the date range."
                     />

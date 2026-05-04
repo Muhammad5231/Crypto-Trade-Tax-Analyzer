@@ -17,6 +17,7 @@ test('generateCsvBuffer returns a combined CSV export payload', async () => {
   assert.match(csvText, /Buy Fee Rate,0%/);
   assert.match(csvText, /Sell Fee Rate,0.1%/);
   assert.match(csvText, /SUMMARY/);
+  assert.match(csvText, /Total 4% Cess/);
   assert.match(csvText, /REALIZED TRADES/);
   assert.match(csvText, /Pair,Buy Date,Sell Date,Qty/);
   assert.match(csvText, /BTCUSDT/);

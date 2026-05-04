@@ -244,6 +244,9 @@ function MobileDateBlock({ label, value }) {
 }
 
 function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
+  const grossResultLabel = trade.grossResultLabel || (trade.grossProfit >= 0 ? 'WIN' : 'LOSS');
+  const netResultLabel = trade.netResultLabel || trade.resultLabel || (trade.finalNetProfit >= 0 ? 'WIN' : 'LOSS');
+
   return (
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
       <div className="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-sky-500/8 blur-3xl" />
@@ -254,15 +257,26 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
           <div>
             <p className="font-display text-lg font-bold text-slate-900 dark:text-white">{trade.contract}</p>
           </div>
-          <span
-            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
-              trade.finalNetProfit >= 0
-                ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
-                : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
-            }`}
-          >
-            {trade.resultLabel}
-          </span>
+          <div className="flex max-w-[10rem] flex-col items-end gap-1.5">
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
+                grossResultLabel === 'WIN'
+                  ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
+                  : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
+              }`}
+            >
+              Gross: {grossResultLabel}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
+                netResultLabel === 'WIN'
+                  ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
+                  : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
+              }`}
+            >
+              Net: {netResultLabel}
+            </span>
+          </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -320,7 +334,8 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
           </span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">GST {formatCurrency(trade.gstOnFees)}</span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">TDS {formatCurrency(trade.tds)}</span>
-          <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">Tax {formatCurrency(trade.cryptoTax)}</span>
+          <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">30% Tax {formatCurrency(trade.cryptoTax)}</span>
+          <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">Cess {formatCurrency(trade.cessAmount || 0)}</span>
         </div>
       </div>
     </article>

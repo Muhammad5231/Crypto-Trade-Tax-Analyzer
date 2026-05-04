@@ -17,7 +17,8 @@ const DEFAULT_SETTINGS = {
   sellFeeRate: new Decimal('0.001'),
   gstRate: new Decimal('0.18'),
   tdsRate: new Decimal('0.01'),
-  taxRate: new Decimal('0.30')
+  taxRate: new Decimal('0.30'),
+  cessRate: new Decimal('0.04')
 };
 
 const FIELD_ALIASES = {
@@ -70,6 +71,18 @@ function toMoney(decimalValue) {
 
 function toQuantity(decimalValue) {
   return Number(new Decimal(decimalValue).toDecimalPlaces(8).toString());
+}
+
+function hasUsableRawFee(rawFees) {
+  if (rawFees === undefined || rawFees === null || rawFees === '') {
+    return false;
+  }
+
+  try {
+    return new Decimal(rawFees).gt(0);
+  } catch (_error) {
+    return false;
+  }
 }
 
 function determineSide(rawValue) {
@@ -200,22 +213,34 @@ function normalizeTradeRow(row, index) {
   };
 }
 
+function resolveMatchedFee(trade, matchedQty, matchedValue, fallbackRate) {
+  if (hasUsableRawFee(trade.rawFees)) {
+    return new Decimal(trade.rawFees).mul(matchedQty).div(trade.qty);
+  }
+
+  return matchedValue.mul(fallbackRate);
+}
+
 function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence, settings) {
   const buyValue = matchedQty.mul(buyLot.execPrice);
   const sellValue = matchedQty.mul(sellTrade.execPrice);
   const grossProfit = sellValue.minus(buyValue);
-  const buySideFee = buyValue.mul(settings.buyFeeRate);
-  const sellSideFee = sellValue.mul(settings.sellFeeRate);
+  const buySideFee = resolveMatchedFee(buyLot, matchedQty, buyValue, settings.buyFeeRate);
+  const sellSideFee = resolveMatchedFee(sellTrade, matchedQty, sellValue, settings.sellFeeRate);
   const fees = buySideFee.plus(sellSideFee);
   const gstOnFees = fees.mul(settings.gstRate);
   const tds = sellValue.mul(settings.tdsRate);
   const cryptoTax = grossProfit.gt(0) ? grossProfit.mul(settings.taxRate) : new Decimal(0);
-  const netProfitInHand = grossProfit.minus(fees).minus(gstOnFees).minus(tds).minus(cryptoTax);
+  const cessAmount = cryptoTax.gt(0) ? cryptoTax.mul(settings.cessRate) : new Decimal(0);
+  const totalTaxAmount = cryptoTax.plus(cessAmount);
+  const netProfitInHand = grossProfit.minus(fees).minus(gstOnFees).minus(tds).minus(totalTaxAmount);
   const finalNetProfit = netProfitInHand.plus(tds);
   const holdingDays = Math.max(
     0,
     Math.floor((sellTrade.time.getTime() - buyLot.time.getTime()) / (1000 * 60 * 60 * 24))
   );
+  const grossResultLabel = grossProfit.gte(0) ? 'WIN' : 'LOSS';
+  const netResultLabel = finalNetProfit.gte(0) ? 'WIN' : 'LOSS';
 
   return {
     id: `${contract}-${sequence}`,
@@ -236,10 +261,14 @@ function buildRealizedTrade(contract, buyLot, sellTrade, matchedQty, sequence, s
     gstOnFees: toMoney(gstOnFees),
     tds: toMoney(tds),
     cryptoTax: toMoney(cryptoTax),
+    cessAmount: toMoney(cessAmount),
+    totalTaxAmount: toMoney(totalTaxAmount),
     netProfitInHand: toMoney(netProfitInHand),
     finalNetProfit: toMoney(finalNetProfit),
     holdingDays,
-    resultLabel: finalNetProfit.gte(0) ? 'WIN' : 'LOSS'
+    grossResultLabel,
+    netResultLabel,
+    resultLabel: netResultLabel
   };
 }
 
@@ -252,6 +281,8 @@ function aggregateSummary(realizedTrades) {
     totalGstOnFees: 0,
     totalTdsDeducted: 0,
     totalCryptoTax: 0,
+    totalCessAmount: 0,
+    totalTaxAmount: 0,
     netProfitInHand: 0,
     finalNetProfit: 0
   };
@@ -264,6 +295,8 @@ function aggregateSummary(realizedTrades) {
     summary.totalGstOnFees += trade.gstOnFees;
     summary.totalTdsDeducted += trade.tds;
     summary.totalCryptoTax += trade.cryptoTax;
+    summary.totalCessAmount += trade.cessAmount;
+    summary.totalTaxAmount += trade.totalTaxAmount;
     summary.netProfitInHand += trade.netProfitInHand;
     summary.finalNetProfit += trade.finalNetProfit;
   }
@@ -363,7 +396,8 @@ function buildAnalytics(realizedTrades, openPositions, summary) {
     { label: 'Fees', value: summary.totalFeesPaid },
     { label: 'GST on Fees', value: summary.totalGstOnFees },
     { label: 'TDS', value: summary.totalTdsDeducted },
-    { label: 'Crypto Tax', value: summary.totalCryptoTax }
+    { label: 'Base Crypto Tax', value: summary.totalCryptoTax },
+    { label: '4% Cess', value: summary.totalCessAmount }
   ];
 
   return {
@@ -433,7 +467,9 @@ function processNormalizedTrades(trades, warnings = [], rawSettings = {}) {
       }
 
       const remainingBuyValue = buyLot.remainingQty.mul(buyLot.execPrice);
-      const openBuyFee = remainingBuyValue.mul(settings.buyFeeRate);
+      const openBuyFee = hasUsableRawFee(buyLot.rawFees)
+        ? new Decimal(buyLot.rawFees).mul(buyLot.remainingQty).div(buyLot.qty)
+        : remainingBuyValue.mul(settings.buyFeeRate);
       const totalInvested = remainingBuyValue.plus(openBuyFee);
 
       openPositions.push({

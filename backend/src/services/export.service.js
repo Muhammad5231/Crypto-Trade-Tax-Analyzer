@@ -90,7 +90,9 @@ function buildCsvBundle(report) {
   rows.push(buildCsvRow(['Total Fees Paid', formatMoney(summary.totalFeesPaid)]));
   rows.push(buildCsvRow(['Total GST on Fees', formatMoney(summary.totalGstOnFees)]));
   rows.push(buildCsvRow(['Total TDS Deducted', formatMoney(summary.totalTdsDeducted)]));
-  rows.push(buildCsvRow(['Total Crypto Tax', formatMoney(summary.totalCryptoTax)]));
+  rows.push(buildCsvRow(['Total Base Crypto Tax', formatMoney(summary.totalCryptoTax)]));
+  rows.push(buildCsvRow(['Total 4% Cess', formatMoney(summary.totalCessAmount)]));
+  rows.push(buildCsvRow(['Total Direct Tax', formatMoney(summary.totalTaxAmount)]));
   rows.push(buildCsvRow(['Final Net Profit', formatMoney(summary.finalNetProfit)]));
   rows.push('');
 
@@ -110,6 +112,8 @@ function buildCsvBundle(report) {
       'GST',
       'TDS',
       '30% Tax',
+      '4% Cess',
+      'Total Tax',
       'Final Net'
     ])
   );
@@ -130,6 +134,8 @@ function buildCsvBundle(report) {
         formatMoney(trade.gstOnFees),
         formatMoney(trade.tds),
         formatMoney(trade.cryptoTax),
+        formatMoney(trade.cessAmount),
+        formatMoney(trade.totalTaxAmount),
         formatMoney(trade.finalNetProfit)
       ])
     );

@@ -17,7 +17,9 @@ test('processTradeUpload returns expected totals for the sample CSV', () => {
   assert.equal(report.summary.totalGstOnFees, 692.46);
   assert.equal(report.summary.totalTdsDeducted, 38470);
   assert.equal(report.summary.totalCryptoTax, 59100);
-  assert.equal(report.summary.finalNetProfit, 83360.54);
+  assert.equal(report.summary.totalCessAmount, 2364);
+  assert.equal(report.summary.totalTaxAmount, 61464);
+  assert.equal(report.summary.finalNetProfit, 80996.54);
   assert.deepEqual(report.meta.feeModel, {
     userName: '',
     exchangeName: '',
@@ -68,7 +70,9 @@ test('processTradeUpload applies configurable buy-side spot fees and carries the
   assert.equal(report.realizedTrades.length, 1);
   assert.equal(report.realizedTrades[0].fees, 2);
   assert.equal(report.realizedTrades[0].gstOnFees, 0.36);
-  assert.equal(report.realizedTrades[0].finalNetProfit, 67.64);
+  assert.equal(report.realizedTrades[0].cessAmount, 1.2);
+  assert.equal(report.realizedTrades[0].totalTaxAmount, 31.2);
+  assert.equal(report.realizedTrades[0].finalNetProfit, 66.44);
   assert.equal(report.openPositions.length, 1);
   assert.equal(report.openPositions[0].buySideFee, 3);
   assert.equal(report.openPositions[0].totalInvested, 303);
@@ -78,6 +82,24 @@ test('processTradeUpload applies configurable buy-side spot fees and carries the
     buyFeePercent: 1,
     sellFeePercent: 0
   });
+});
+
+test('processTradeUpload prioritizes raw CSV fees and only falls back to saved percentages when raw fees are zero', () => {
+  const csv = `Time,Contract,Qty,Side,Exec.Price,Fees
+2026-04-26 12:16:39,BTC_INR,0.0001,buy,7454045.5,0
+2026-04-27 06:41:28,BTC_INR,0.0001,sell,7556980,0.802551276`;
+
+  const report = processTradeUpload(Buffer.from(csv, 'utf8'), {
+    userName: 'Muhammad',
+    exchangeName: 'Delta',
+    buyFeePercent: 1,
+    sellFeePercent: 1
+  });
+
+  assert.equal(report.realizedTrades.length, 1);
+  assert.equal(report.realizedTrades[0].buySideFee, 7.45);
+  assert.equal(report.realizedTrades[0].sellSideFee, 0.8);
+  assert.equal(report.realizedTrades[0].fees, 8.26);
 });
 
 test('processTradeUpload supports Delta trade-history CSV headers with Filled Qty and Fees paid', () => {
@@ -93,5 +115,6 @@ test('processTradeUpload supports Delta trade-history CSV headers with Filled Qt
   assert.equal(report.realizedTrades[0].matchedQty, 0.0001);
   assert.equal(report.realizedTrades[0].buyDateTime, '2026-04-26 12:16:39');
   assert.equal(report.realizedTrades[0].sellDateTime, '2026-04-27 06:41:28');
+  assert.equal(report.realizedTrades[0].sellSideFee, 0.8);
   assert.equal(report.warnings.length, 0);
 });

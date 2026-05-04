@@ -122,7 +122,8 @@ The frontend shows:
 - `GST on Fees = 18% of total fees`
 - `TDS = 1% of sell value`
 - `Base Crypto Tax = 30% of positive realized gain`
-- `Net Profit in Hand = gross_profit - total_fees - gst - tds - tax`
+- `Health and Education Cess = 4% of the 30% base tax`
+- `Net Profit in Hand = gross_profit - total_fees - gst - tds - total_direct_tax`
 - `Final Net Profit = net_profit_in_hand + tds`
 
 ### Easy-English interpretation
@@ -142,6 +143,7 @@ As of **April 28, 2026**, this dashboard follows a practical India crypto spot-t
 ### Modeled in the app
 
 - `30%` base VDA tax on positive realized gain
+- `4%` Health and Education Cess on the base VDA tax amount
 - `1%` TDS on transfer consideration
 - `18%` GST on exchange or service fees
 - profile-based buy fee and sell fee treatment

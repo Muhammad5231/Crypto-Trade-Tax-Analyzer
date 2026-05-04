@@ -75,6 +75,10 @@ function buildCsvExportPayload(report) {
           gstOnFees: trade.gstOnFees,
           tds: trade.tds,
           cryptoTax: trade.cryptoTax,
+          cessAmount: trade.cessAmount,
+          totalTaxAmount: trade.totalTaxAmount,
+          grossResultLabel: trade.grossResultLabel,
+          netResultLabel: trade.netResultLabel,
           finalNetProfit: trade.finalNetProfit
         }))
       : [],

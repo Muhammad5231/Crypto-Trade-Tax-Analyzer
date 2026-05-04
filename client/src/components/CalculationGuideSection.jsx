@@ -92,6 +92,7 @@ function CalculationGuideSection({ compact = false }) {
               title="3. India 2026 spot-tax model"
               items={[
                 'Section 115BBH applies a 30% base tax on positive VDA gains.',
+                'The app also adds a 4% Health and Education Cess on that 30% base tax amount.',
                 'This app follows the practical rule that cost of acquisition is the main deductible amount in this crypto gain model.',
                 'Section 194S applies 1% TDS on transfer consideration, subject to legal threshold rules.',
                 'For fee GST, this dashboard uses an 18% exchange-service assumption based on GST service-rate guidance.'
