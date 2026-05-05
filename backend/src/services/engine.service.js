@@ -194,7 +194,7 @@ function normalizeTradeRow(row, index) {
     throw new Error('Exec.Price must be greater than 0');
   }
 
-  const time = parseTradeTimestamp(rawTime);
+  const parsedTimestamp = parseTradeTimestamp(rawTime);
   const side = determineSide(rawSide);
   const orderValueRaw = findAliasValue(row, FIELD_ALIASES.orderValue);
   const feeValueRaw = findAliasValue(row, FIELD_ALIASES.fees);
@@ -202,8 +202,10 @@ function normalizeTradeRow(row, index) {
   return {
     id: `trade-${index + 2}`,
     rowNumber: index + 2,
-    time,
-    timeLabel: formatDateTime(time),
+    time: parsedTimestamp.date,
+    timeLabel: parsedTimestamp.normalizedLabel,
+    normalizedTimezone: parsedTimestamp.normalizedTimezone,
+    sourceTimezone: parsedTimestamp.sourceTimezone,
     contract: rawContract.toUpperCase(),
     qty,
     side,

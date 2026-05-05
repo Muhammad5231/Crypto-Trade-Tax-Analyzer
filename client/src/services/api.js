@@ -256,13 +256,24 @@ export async function processTradeFile(file, profile = {}) {
   formData.append('buyFeePercent', profile.buyFeePercent ?? '0');
   formData.append('sellFeePercent', profile.sellFeePercent ?? '0');
 
-  const response = await api.post('/upload/process', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
+  try {
+    const response = await api.post('/upload/process', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
 
-  return response.data.data;
+    return response.data.data;
+  } catch (error) {
+    const payload = error?.response?.data;
+    const enhancedError = new Error(payload?.message || error.message || 'Unable to process the uploaded file.');
+
+    enhancedError.statusCode = error?.response?.status || null;
+    enhancedError.details = payload?.details || null;
+    enhancedError.issues = Array.isArray(payload?.issues) ? payload.issues : payload?.details?.issues || [];
+
+    throw enhancedError;
+  }
 }
 
 export async function exportReportCsv(report) {

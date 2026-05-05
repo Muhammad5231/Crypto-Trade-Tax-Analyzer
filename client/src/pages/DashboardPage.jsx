@@ -8,6 +8,7 @@ import DataTable from '../components/DataTable';
 import EmptyState from '../components/EmptyState';
 import ExportMenu from '../components/ExportMenu';
 import FilterBar from '../components/FilterBar';
+import ImportIssuesModal from '../components/ImportIssuesModal';
 import MetricCard from '../components/MetricCard';
 import MobileDashboardView from '../components/MobileDashboardView';
 import ProfileSetupModal from '../components/ProfileSetupModal';
@@ -241,6 +242,7 @@ function DashboardPage() {
   const [mobileTradeVisibleCount, setMobileTradeVisibleCount] = useState(8);
   const [mobileOpenVisibleCount, setMobileOpenVisibleCount] = useState(10);
   const [toasts, setToasts] = useState([]);
+  const [importIssuesModal, setImportIssuesModal] = useState(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -331,6 +333,7 @@ function DashboardPage() {
 
     try {
       const nextReport = await processTradeFile(file, getProfileUploadPayload(activeProfile));
+      setImportIssuesModal(null);
 
       nextReport.meta = {
         ...nextReport.meta,
@@ -357,8 +360,19 @@ function DashboardPage() {
         pushToast('Warnings captured', `${nextReport.warnings.length} rows or conditions need attention.`, 'warning');
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Unable to process the uploaded file.';
-      pushToast('Upload failed', message, 'error');
+      const issues = Array.isArray(error?.issues) ? error.issues : [];
+      const message = error.message || 'Unable to process the uploaded file.';
+
+      if (issues.length) {
+        setImportIssuesModal({
+          title: 'CSV import needs attention',
+          message,
+          issues
+        });
+        pushToast('Import blocked', `${issues.length} CSV issue${issues.length === 1 ? '' : 's'} need review.`, 'error');
+      } else {
+        pushToast('Upload failed', message, 'error');
+      }
     } finally {
       setProcessing(false);
     }
@@ -983,6 +997,14 @@ function DashboardPage() {
         onProfileDraftChange={handleProfileDraftChange}
         onSave={saveProfile}
         onClose={() => setProfileModalOpen(false)}
+      />
+
+      <ImportIssuesModal
+        open={Boolean(importIssuesModal)}
+        title={importIssuesModal?.title || ''}
+        message={importIssuesModal?.message || ''}
+        issues={importIssuesModal?.issues || []}
+        onClose={() => setImportIssuesModal(null)}
       />
 
       <input

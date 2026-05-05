@@ -118,3 +118,34 @@ test('processTradeUpload supports Delta trade-history CSV headers with Filled Qt
   assert.equal(report.realizedTrades[0].sellSideFee, 0.8);
   assert.equal(report.warnings.length, 0);
 });
+
+test('processTradeUpload auto-detects semicolon delimiters, strips BOM, and drops duplicate header rows', () => {
+  const csv = `\uFEFFTime;Contract;Qty;Side;Exec.Price
+2026-04-26 12:16:39;BTC_INR;0.0001;buy;7454045.5
+Time;Contract;Qty;Side;Exec.Price
+2026-04-27 06:41:28;BTC_INR;0.0001;sell;7556980`;
+
+  const report = processTradeUpload(Buffer.from(csv, 'utf8'));
+
+  assert.equal(report.meta.validTrades, 2);
+  assert.equal(report.meta.duplicateHeaderRowsDropped, 1);
+  assert.equal(report.meta.delimiterUsed, ';');
+  assert.equal(report.realizedTrades.length, 1);
+});
+
+test('processTradeUpload returns structured issues for critical timezone conflicts', () => {
+  const csv = `Time,Contract,Qty,Side,Exec.Price
+2026-04-26 12:16:39 XYZ,BTC_INR,0.0001,buy,7454045.5
+2026-04-27 06:41:28 XYZ,BTC_INR,0.0001,sell,7556980`;
+
+  assert.throws(
+    () => processTradeUpload(Buffer.from(csv, 'utf8')),
+    (error) => {
+      assert.equal(error.statusCode, 400);
+      assert.match(error.message, /timezone conflicts/i);
+      assert.ok(Array.isArray(error.details?.issues));
+      assert.equal(error.details.issues[0].code, 'timezone_unresolved');
+      return true;
+    }
+  );
+});
