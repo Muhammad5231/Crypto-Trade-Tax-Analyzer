@@ -246,6 +246,8 @@ function MobileDateBlock({ label, value }) {
 function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
   const grossResultLabel = trade.grossResultLabel || (trade.grossProfit >= 0 ? 'WIN' : 'LOSS');
   const netResultLabel = trade.netResultLabel || trade.resultLabel || (trade.finalNetProfit >= 0 ? 'WIN' : 'LOSS');
+  const grossTone = grossResultLabel === 'WIN' ? 'positive' : 'negative';
+  const netTone = netResultLabel === 'WIN' ? 'positive' : 'negative';
 
   return (
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
@@ -260,7 +262,7 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
           <div className="flex max-w-[10rem] flex-col items-end gap-1.5">
             <span
               className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
-                grossResultLabel === 'WIN'
+                grossTone === 'positive'
                   ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
                   : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
               }`}
@@ -269,7 +271,7 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
             </span>
             <span
               className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
-                netResultLabel === 'WIN'
+                netTone === 'positive'
                   ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
                   : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
               }`}
@@ -857,15 +859,13 @@ function MobileDashboardView({
 
               {mobileTradeHighlights.length ? (
                 <div className="grid grid-cols-2 gap-3">
-                  {mobileTradeHighlights.map((item, index) => (
+                  {mobileTradeHighlights.slice(0, 2).map((item) => (
                     <MobileMetricTile
                       key={item.label}
                       label={item.label}
                       value={item.value}
                       tone={item.tone}
-                      className={`min-h-[96px] ${
-                        mobileTradeHighlights.length % 2 === 1 && index === mobileTradeHighlights.length - 1 ? 'col-span-2' : ''
-                      }`}
+                      className="min-h-[96px]"
                     />
                   ))}
                 </div>

@@ -727,7 +727,7 @@ function DashboardPage() {
       align: 'right',
       render: (row) => formatQuantity(row.matchedQty),
       sortAccessor: (row) => row.matchedQty,
-      footer: (row) => formatQuantity(row.matchedQty)
+      footer: () => '-'
     },
     {
       key: 'buyValue',
@@ -756,7 +756,7 @@ function DashboardPage() {
       key: 'fees',
       label: 'Fees (INR)',
       align: 'right',
-      render: (row) => renderFeeBreakdownCell(row),
+      render: (row) => formatCurrency(row.fees),
       footer: (row) => formatCurrency(row.fees)
     },
     {
@@ -786,35 +786,46 @@ function DashboardPage() {
 
   const openColumns = [
     {
+      key: 'rowNumber',
+      label: '#',
+      sortable: false,
+      render: (_row, absoluteIndex) => <span className="font-medium text-slate-200">{absoluteIndex + 1}</span>,
+      cellClassName: 'min-w-[2.5rem]',
+      footer: () => 'Totals'
+    },
+    {
       key: 'contract',
       label: 'Pair',
-      render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.contract}</span>,
+      render: (row) => renderPairCell(row.contract),
       initialDirection: 'asc',
-      footer: (row) => row.label
+      cellClassName: 'min-w-[7.5rem]',
+      footer: () => ''
     },
     {
       key: 'buyDateTime',
       label: 'Buy Date',
       render: (row) => renderStackedDateTime(row.buyDateTime),
       sortAccessor: (row) => getDateSortValue(row.buyDateTime),
-      cellClassName: 'min-w-[10rem]'
+      cellClassName: 'min-w-[9rem]',
+      footer: () => '-'
     },
     {
       key: 'unsoldQty',
       label: 'Unsold Qty',
       align: 'right',
-      render: (row) => formatQuantity(row.unsoldQty)
+      render: (row) => formatQuantity(row.unsoldQty),
+      footer: (row) => formatQuantity(row.unsoldQty)
     },
     {
       key: 'avgBuyPrice',
-      label: 'Avg Buy Price',
+      label: 'Avg Buy Price (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.avgBuyPrice),
-      footer: (row) => formatCurrency(row.avgBuyPrice)
+      footer: () => '-'
     },
     {
       key: 'totalInvested',
-      label: 'Total Invested',
+      label: 'Total Invested (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.totalInvested),
       footer: (row) => formatCurrency(row.totalInvested),
@@ -1354,6 +1365,7 @@ function DashboardPage() {
                       defaultSortKey="buyDateTime"
                       defaultSortDirection="asc"
                       minTableWidth="min-w-[760px]"
+                      variant="trade-ledger"
                       emptyTitle="No open holdings available"
                       emptyDescription="All matched buys were fully sold, or the current filters have hidden the remaining holdings."
                     />
