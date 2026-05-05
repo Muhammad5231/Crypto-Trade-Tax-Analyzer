@@ -22,7 +22,8 @@ function DataTable({
   minTableWidth = 'min-w-full',
   emptyTitle,
   emptyDescription,
-  footerRow
+  footerRow,
+  variant = 'default'
 }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || columns[0]?.key);
   const [sortDirection, setSortDirection] = useState(defaultSortDirection);
@@ -52,13 +53,41 @@ function DataTable({
 
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / pageSize));
   const paginatedRows = sortedRows.slice((page - 1) * pageSize, page * pageSize);
+  const variantClasses =
+    variant === 'trade-ledger'
+      ? {
+          shell: 'overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,22,35,0.98),rgba(10,19,31,0.98))] shadow-[0_24px_70px_rgba(2,6,23,0.28)]',
+          table: 'divide-y divide-white/8 text-[15px]',
+          head: 'bg-white/[0.03] backdrop-blur-md',
+          headCell: 'px-5 py-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300',
+          button: 'hover:text-white',
+          body: 'divide-y divide-white/6',
+          row: 'hover:bg-white/[0.035]',
+          zebra: 'bg-white/[0.015]',
+          cell: 'px-5 py-5 text-slate-100',
+          footer: 'bg-slate-950/30',
+          footerCell: 'px-5 py-5 text-[15px] font-semibold text-white'
+        }
+      : {
+          shell: 'ambient-surface-strong overflow-hidden rounded-[24px]',
+          table: 'divide-y divide-slate-200 text-sm dark:divide-white/10',
+          head: 'ambient-table-head sticky top-0 z-10',
+          headCell: 'px-4 py-3.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400',
+          button: 'hover:text-slate-800 dark:hover:text-white',
+          body: 'ambient-table-body divide-y divide-slate-200 dark:divide-white/10',
+          row: 'hover:bg-white/20 dark:hover:bg-white/[0.045]',
+          zebra: 'bg-slate-100/30 dark:bg-white/[0.02]',
+          cell: 'px-4 py-3.5 text-slate-700 dark:text-slate-200',
+          footer: 'ambient-table-foot sticky bottom-0 z-10',
+          footerCell: 'px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white'
+        };
 
   return (
     <div className="space-y-4">
-      <div className="ambient-surface-strong overflow-hidden rounded-[24px]">
+      <div className={variantClasses.shell}>
         <div className="overflow-x-auto overflow-y-visible scrollbar-thin">
-          <table className={`w-full ${minTableWidth} divide-y divide-slate-200 text-sm dark:divide-white/10`}>
-            <thead className="ambient-table-head sticky top-0 z-10">
+          <table className={`w-full ${minTableWidth} ${variantClasses.table}`}>
+            <thead className={`sticky top-0 z-10 ${variantClasses.head}`}>
               <tr>
                 {columns.map((column) => {
                   const isSorted = sortKey === column.key;
@@ -67,7 +96,7 @@ function DataTable({
                     <th
                       key={column.key}
                       scope="col"
-                      className={`whitespace-nowrap px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 ${
+                      className={`whitespace-nowrap text-left ${variantClasses.headCell} ${
                         column.align === 'right' ? 'text-right' : ''
                       }`}
                     >
@@ -84,7 +113,7 @@ function DataTable({
                               setSortDirection(column.initialDirection || 'desc');
                             }
                           }}
-                          className={`inline-flex w-full items-center gap-2 transition hover:text-slate-800 dark:hover:text-white ${
+                          className={`inline-flex w-full items-center gap-2 transition ${variantClasses.button} ${
                             column.align === 'right' ? 'justify-end' : ''
                           }`}
                         >
@@ -105,7 +134,7 @@ function DataTable({
                 })}
               </tr>
             </thead>
-            <tbody className="ambient-table-body divide-y divide-slate-200 dark:divide-white/10">
+            <tbody className={variantClasses.body}>
               {paginatedRows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-16 text-center">
@@ -117,18 +146,18 @@ function DataTable({
                 paginatedRows.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={`transition hover:bg-white/20 dark:hover:bg-white/[0.045] ${
-                      index % 2 === 1 ? 'bg-slate-100/30 dark:bg-white/[0.02]' : ''
+                    className={`transition ${variantClasses.row} ${
+                      index % 2 === 1 ? variantClasses.zebra : ''
                     }`}
                   >
                     {columns.map((column) => (
                       <td
                         key={`${row.id}-${column.key}`}
-                        className={`whitespace-nowrap px-4 py-3.5 align-top text-slate-700 dark:text-slate-200 ${
+                        className={`whitespace-nowrap align-top ${variantClasses.cell} ${
                           column.align === 'right' ? 'text-right' : ''
                         } ${typeof column.cellClassName === 'function' ? column.cellClassName(row) : column.cellClassName || ''}`}
                       >
-                        {column.render ? column.render(row) : row[column.key]}
+                        {column.render ? column.render(row, (page - 1) * pageSize + index, index) : row[column.key]}
                       </td>
                     ))}
                   </tr>
@@ -136,12 +165,12 @@ function DataTable({
               )}
             </tbody>
             {footerRow ? (
-              <tfoot className="ambient-table-foot sticky bottom-0 z-10">
-                <tr className="border-t border-slate-300/80 dark:border-white/10">
+              <tfoot className={`sticky bottom-0 z-10 ${variantClasses.footer}`}>
+                <tr className={variant === 'trade-ledger' ? 'border-t border-white/8' : 'border-t border-slate-300/80 dark:border-white/10'}>
                   {columns.map((column) => (
                     <td
                       key={`footer-${column.key}`}
-                      className={`px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white ${
+                      className={`${variantClasses.footerCell} ${
                         column.align === 'right' ? 'text-right' : ''
                       } ${typeof column.footerClassName === 'function' ? column.footerClassName(footerRow) : column.footerClassName || ''}`}
                     >

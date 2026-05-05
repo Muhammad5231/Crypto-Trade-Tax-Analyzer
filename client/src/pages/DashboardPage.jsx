@@ -164,41 +164,38 @@ function renderStackedDateTime(value) {
   const [datePart, timePart] = String(formattedValue).split(', ');
 
   return (
-    <div className="min-w-[8.75rem]">
-      <div className="font-medium text-slate-900 dark:text-white">{datePart || formattedValue}</div>
-      {timePart ? <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{timePart}</div> : null}
+    <div className="min-w-[7.75rem] leading-none">
+      <div className="font-medium text-white">{datePart || formattedValue}</div>
+      {timePart ? <div className="mt-2 text-[13px] text-slate-400">{timePart}</div> : null}
     </div>
   );
 }
 
-function renderTradeOutcomeTags(row) {
-  const outcomeTags = [
-    {
-      key: 'gross',
-      label: `Gross: ${row.grossResultLabel || (row.grossProfit >= 0 ? 'WIN' : 'LOSS')}`,
-      positive: (row.grossResultLabel || (row.grossProfit >= 0 ? 'WIN' : 'LOSS')) === 'WIN'
-    },
-    {
-      key: 'net',
-      label: `Net: ${row.netResultLabel || row.resultLabel || (row.finalNetProfit >= 0 ? 'WIN' : 'LOSS')}`,
-      positive: (row.netResultLabel || row.resultLabel || (row.finalNetProfit >= 0 ? 'WIN' : 'LOSS')) === 'WIN'
-    }
-  ];
+function renderPairCell(contract) {
+  const pairLabel = String(contract || '').replace(/_/g, '/');
+  return (
+    <div className="min-w-[6.75rem] leading-none">
+      <div className="font-semibold text-white">{contract}</div>
+      <div className="mt-2 text-[13px] text-slate-400">{pairLabel}</div>
+    </div>
+  );
+}
+
+function renderFeeBreakdownCell(row) {
+  const parts = [];
+
+  if (Number(row.buySideFee || 0) > 0) {
+    parts.push(`B ${formatCurrency(row.buySideFee)}`);
+  }
+
+  if (Number(row.sellSideFee || 0) > 0) {
+    parts.push(`S ${formatCurrency(row.sellSideFee)}`);
+  }
 
   return (
-    <div className="flex min-w-[10rem] flex-wrap gap-2">
-      {outcomeTags.map((tag) => (
-        <span
-          key={tag.key}
-          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
-            tag.positive
-              ? 'bg-mint-500/15 text-mint-700 dark:text-mint-300'
-              : 'bg-coral-500/15 text-coral-700 dark:text-coral-300'
-          }`}
-        >
-          {tag.label}
-        </span>
-      ))}
+    <div className="min-w-[6.5rem]">
+      <div>{formatCurrency(row.fees)}</div>
+      {parts.length ? <div className="mt-2 text-[12px] text-slate-400">{parts.join(' · ')}</div> : null}
     </div>
   );
 }
@@ -532,12 +529,6 @@ function DashboardPage() {
   const activeSourceFile = currentFileName || safeReport?.meta?.sourceFile || 'No source attached';
   const appliedFeeModel = safeReport?.meta?.feeModel || profile;
   const feeModelHelper = `${appliedFeeModel.exchangeName || 'Exchange profile'} · ${getFeeModelSummary(appliedFeeModel)}`;
-  const hasBuyFeesInReport =
-    (safeReport?.realizedTrades || []).some((trade) => Number(trade.buySideFee || 0) > 0) ||
-    (safeReport?.openPositions || []).some((position) => Number(position.buySideFee || 0) > 0);
-  const hasSellFeesInReport = (safeReport?.realizedTrades || []).some((trade) => Number(trade.sellSideFee || 0) > 0);
-  const showBuyFeeColumn = Number(appliedFeeModel.buyFeePercent || 0) > 0 || hasBuyFeesInReport;
-  const showSellFeeColumn = Number(appliedFeeModel.sellFeePercent || 0) > 0 || hasSellFeesInReport;
   const snapshotComparisonBase = Math.max(
     Math.abs(summary?.finalNetProfit || 0),
     Math.abs(summary?.grossProfit || 0),
@@ -699,135 +690,97 @@ function DashboardPage() {
 
   const tradeColumns = [
     {
+      key: 'rowNumber',
+      label: '#',
+      sortable: false,
+      render: (_row, absoluteIndex) => <span className="font-medium text-slate-200">{absoluteIndex + 1}</span>,
+      cellClassName: 'min-w-[2.5rem]',
+      footer: () => 'Totals'
+    },
+    {
       key: 'contract',
       label: 'Pair',
-      render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.contract}</span>,
+      render: (row) => renderPairCell(row.contract),
       initialDirection: 'asc',
-      cellClassName: 'min-w-[7rem]',
-      footer: (row) => row.label
-    },
-    {
-      key: 'tradeOutcome',
-      label: 'Status',
-      sortable: false,
-      render: (row) => renderTradeOutcomeTags(row),
-      cellClassName: 'min-w-[11rem]'
-    },
-    {
-      key: 'sellDateTime',
-      label: 'Sell Date',
-      sortAccessor: (row) => getDateSortValue(row.sellDateTime),
-      render: (row) => renderStackedDateTime(row.sellDateTime),
-      cellClassName: 'min-w-[10rem]'
+      cellClassName: 'min-w-[7.5rem]',
+      footer: () => ''
     },
     {
       key: 'buyDateTime',
       label: 'Buy Date',
       sortAccessor: (row) => getDateSortValue(row.buyDateTime),
       render: (row) => renderStackedDateTime(row.buyDateTime),
-      cellClassName: 'min-w-[10rem]'
+      cellClassName: 'min-w-[9rem]',
+      footer: () => '-'
+    },
+    {
+      key: 'sellDateTime',
+      label: 'Sell Date',
+      sortAccessor: (row) => getDateSortValue(row.sellDateTime),
+      render: (row) => renderStackedDateTime(row.sellDateTime),
+      cellClassName: 'min-w-[9rem]',
+      footer: () => '-'
     },
     {
       key: 'matchedQty',
       label: 'Qty',
       align: 'right',
       render: (row) => formatQuantity(row.matchedQty),
-      sortAccessor: (row) => row.matchedQty
+      sortAccessor: (row) => row.matchedQty,
+      footer: (row) => formatQuantity(row.matchedQty)
     },
     {
       key: 'buyValue',
-      label: 'Buy Value',
+      label: 'Buy Value (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.buyValue),
       footer: (row) => formatCurrency(row.buyValue)
     },
     {
       key: 'sellValue',
-      label: 'Sell Value',
+      label: 'Sell Value (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.sellValue),
       footer: (row) => formatCurrency(row.sellValue)
     },
     {
       key: 'grossProfit',
-      label: 'Gross Profit',
+      label: 'Gross Profit (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.grossProfit),
       footer: (row) => formatCurrency(row.grossProfit),
-      cellClassName: (row) =>
-        row.grossProfit >= 0 ? 'font-semibold text-mint-700 dark:text-mint-300' : 'font-semibold text-coral-700 dark:text-coral-300',
-      footerClassName: (row) =>
-        row.grossProfit >= 0 ? 'text-mint-700 dark:text-mint-300' : 'text-coral-700 dark:text-coral-300'
+      cellClassName: (row) => (row.grossProfit >= 0 ? 'font-semibold text-mint-300' : 'font-semibold text-coral-300'),
+      footerClassName: (row) => (row.grossProfit >= 0 ? 'text-mint-300' : 'text-coral-300')
     },
-    ...(showBuyFeeColumn
-      ? [
-          {
-            key: 'buySideFee',
-            label: 'Buy Fee',
-            align: 'right',
-            render: (row) => formatCurrency(row.buySideFee),
-            footer: (row) => formatCurrency(row.buySideFee)
-          }
-        ]
-      : []),
-    ...(showSellFeeColumn
-      ? [
-          {
-            key: 'sellSideFee',
-            label: 'Sell Fee',
-            align: 'right',
-            render: (row) => formatCurrency(row.sellSideFee),
-            footer: (row) => formatCurrency(row.sellSideFee)
-          }
-        ]
-      : []),
     {
       key: 'fees',
-      label: showBuyFeeColumn || showSellFeeColumn ? 'Total Fees' : 'Fees',
+      label: 'Fees (INR)',
       align: 'right',
-      render: (row) => formatCurrency(row.fees),
+      render: (row) => renderFeeBreakdownCell(row),
       footer: (row) => formatCurrency(row.fees)
     },
     {
       key: 'gstOnFees',
-      label: 'GST',
+      label: 'GST (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.gstOnFees),
       footer: (row) => formatCurrency(row.gstOnFees)
     },
     {
       key: 'tds',
-      label: 'TDS',
+      label: 'TDS (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.tds),
       footer: (row) => formatCurrency(row.tds)
     },
     {
-      key: 'cryptoTax',
-      label: '30% Tax',
-      align: 'right',
-      render: (row) => formatCurrency(row.cryptoTax),
-      footer: (row) => formatCurrency(row.cryptoTax)
-    },
-    {
-      key: 'cessAmount',
-      label: '4% Cess',
-      align: 'right',
-      render: (row) => formatCurrency(row.cessAmount || 0),
-      footer: (row) => formatCurrency(row.cessAmount || 0)
-    },
-    {
       key: 'finalNetProfit',
-      label: 'Final Net',
+      label: 'Final Net (INR)',
       align: 'right',
       render: (row) => formatCurrency(row.finalNetProfit),
       footer: (row) => formatCurrency(row.finalNetProfit),
-      cellClassName: (row) =>
-        row.finalNetProfit >= 0
-          ? 'font-bold text-mint-700 dark:text-mint-300'
-          : 'font-bold text-coral-700 dark:text-coral-300',
-      footerClassName: (row) =>
-        row.finalNetProfit >= 0 ? 'text-mint-700 dark:text-mint-300' : 'text-coral-700 dark:text-coral-300'
+      cellClassName: (row) => (row.finalNetProfit >= 0 ? 'font-bold text-mint-300' : 'font-bold text-coral-300'),
+      footerClassName: (row) => (row.finalNetProfit >= 0 ? 'text-mint-300' : 'text-coral-300')
     }
   ];
 
@@ -1361,7 +1314,8 @@ function DashboardPage() {
                       footerRow={realizedTotals}
                       defaultSortKey="sellDateTime"
                       defaultSortDirection="desc"
-      minTableWidth="min-w-[1390px]"
+                      minTableWidth="min-w-[1180px]"
+                      variant="trade-ledger"
                       emptyTitle="No realized trades match this filter"
                       emptyDescription="Try clearing search text, choosing a different pair, or widening the date range."
                     />
