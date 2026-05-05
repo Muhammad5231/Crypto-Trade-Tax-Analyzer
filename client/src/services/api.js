@@ -32,67 +32,14 @@ function createDownloadBlob(data, contentType) {
   return new Blob([data], { type: contentType });
 }
 
-function buildExportBase(report) {
-  if (!report || typeof report !== 'object') {
-    return report;
+function ensureReportId(reportId) {
+  const normalizedReportId = String(reportId || '').trim();
+
+  if (!normalizedReportId) {
+    throw new Error('This session is not ready for export yet. Please process the CSV again to generate a fresh report.');
   }
 
-  return {
-    fiscal_year: report.fiscal_year || report.fiscalYear,
-    summary: report.summary || {},
-    meta: {
-      sourceFile: report.meta?.sourceFile,
-      processedAt: report.meta?.processedAt,
-      reportId: report.meta?.reportId,
-      feeModel: report.meta?.feeModel
-    }
-  };
-}
-
-function buildCsvExportPayload(report) {
-  const base = buildExportBase(report);
-
-  if (!base || typeof base !== 'object') {
-    return base;
-  }
-
-  return {
-    ...base,
-    realizedTrades: Array.isArray(report.realizedTrades)
-      ? report.realizedTrades.map((trade) => ({
-          contract: trade.contract,
-          buyDateTime: trade.buyDateTime,
-          buyDate: trade.buyDate,
-          sellDateTime: trade.sellDateTime,
-          sellDate: trade.sellDate,
-          matchedQty: trade.matchedQty,
-          buyValue: trade.buyValue,
-          sellValue: trade.sellValue,
-          grossProfit: trade.grossProfit,
-          buySideFee: trade.buySideFee,
-          sellSideFee: trade.sellSideFee,
-          fees: trade.fees,
-          gstOnFees: trade.gstOnFees,
-          tds: trade.tds,
-          cryptoTax: trade.cryptoTax,
-          cessAmount: trade.cessAmount,
-          totalTaxAmount: trade.totalTaxAmount,
-          grossResultLabel: trade.grossResultLabel,
-          netResultLabel: trade.netResultLabel,
-          finalNetProfit: trade.finalNetProfit
-        }))
-      : [],
-    openPositions: Array.isArray(report.openPositions)
-      ? report.openPositions.map((position) => ({
-          contract: position.contract,
-          buyDateTime: position.buyDateTime,
-          buyDate: position.buyDate,
-          unsoldQty: position.unsoldQty,
-          avgBuyPrice: position.avgBuyPrice,
-          totalInvested: position.totalInvested
-        }))
-      : []
-  };
+  return normalizedReportId;
 }
 
 function getBinaryLength(data) {
@@ -196,15 +143,15 @@ async function readBlobText(blob) {
   return blob.text();
 }
 
-async function requestBlobExportWithFetch(endpoint, report, fallbackName, fallbackContentType) {
+async function requestBlobExportWithFetch(endpoint, fallbackName, fallbackContentType, options = {}) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
+    method: options.method || 'GET',
     cache: 'no-store',
     headers: {
       Accept: fallbackContentType,
-      'Content-Type': 'application/json'
+      ...(options.headers || {})
     },
-    body: JSON.stringify(report)
+    body: options.body
   });
 
   const blob = await response.blob();
@@ -227,8 +174,8 @@ async function requestBlobExportWithFetch(endpoint, report, fallbackName, fallba
   };
 }
 
-async function downloadBinaryExport(endpoint, report, fallbackName, fallbackContentType) {
-  const exportResult = await requestBlobExportWithFetch(endpoint, report, fallbackName, fallbackContentType);
+async function downloadBinaryExport(endpoint, fallbackName, fallbackContentType, options = {}) {
+  const exportResult = await requestBlobExportWithFetch(endpoint, fallbackName, fallbackContentType, options);
   const blob = createDownloadBlob(exportResult.data, exportResult.contentType || fallbackContentType);
   const binaryLength = getBinaryLength(exportResult.data);
 
@@ -278,13 +225,18 @@ export async function processTradeFile(file, profile = {}) {
 
 export async function exportReportCsv(report) {
   try {
-    return await downloadBinaryExport(
-      '/export/csv',
-      buildCsvExportPayload(report),
-      'crypto-trade-tax-analyzer-spot-report.csv',
-      'text/csv;charset=utf-8'
-    );
+    const reportId = ensureReportId(report?.meta?.reportId);
+    return await downloadBinaryExport(`/export/csv/${encodeURIComponent(reportId)}`, 'crypto-trade-tax-analyzer-spot-report.csv', 'text/csv;charset=utf-8');
   } catch (error) {
     throw new Error(await extractBlobErrorMessage(error, 'Unable to export the CSV report.'));
+  }
+}
+
+export async function exportTaxReportPdf(report) {
+  try {
+    const reportId = ensureReportId(report?.meta?.reportId);
+    return await downloadBinaryExport(`/export/pdf/${encodeURIComponent(reportId)}`, 'crypto-trade-tax-analyzer-spot-report.pdf', 'application/pdf');
+  } catch (error) {
+    throw new Error(await extractBlobErrorMessage(error, 'Unable to generate the PDF tax report.'));
   }
 }

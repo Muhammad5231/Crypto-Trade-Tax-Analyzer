@@ -1,5 +1,6 @@
 const { REQUIRED_COLUMNS, SAMPLE_CSV } = require('../constants/sampleCsv');
-const { generateCsvBuffer } = require('../services/export.service');
+const { generateCsvBuffer, generateCsvBufferByReportId, generatePdfBufferByReportId } = require('../services/export.service');
+const { storeProcessedReport } = require('../services/report-cache.service');
 const { AppError } = require('../utils/app-error');
 const { processTradeUpload } = require('../services/trade-processing.service');
 
@@ -47,7 +48,13 @@ function processUpload(req, res, next) {
       throw new AppError('Please upload a CSV file to continue.', 400);
     }
 
-    const report = processTradeUpload(req.file.buffer, getProfileConfig(req));
+    const processedReport = processTradeUpload(req.file.buffer, getProfileConfig(req));
+    processedReport.meta = {
+      ...processedReport.meta,
+      sourceFile: req.file.originalname || processedReport.meta?.sourceFile || 'Uploaded CSV'
+    };
+
+    const report = storeProcessedReport(processedReport);
 
     res.json({
       success: true,
@@ -118,8 +125,34 @@ async function exportCsv(req, res, next) {
   }
 }
 
+async function exportCsvByReportId(req, res, next) {
+  try {
+    const csvBuffer = await generateCsvBufferByReportId(req.params.reportId);
+    const filename = buildExportFilename('csv');
+
+    setBinaryDownloadHeaders(res, 'text/csv; charset=utf-8', filename, csvBuffer.length);
+    res.status(200).send(csvBuffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function exportPdfByReportId(req, res, next) {
+  try {
+    const pdfBuffer = await generatePdfBufferByReportId(req.params.reportId);
+    const filename = buildExportFilename('pdf');
+
+    setBinaryDownloadHeaders(res, 'application/pdf', filename, pdfBuffer.length);
+    res.status(200).send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   exportCsv,
+  exportCsvByReportId,
+  exportPdfByReportId,
   getSampleFormat,
   processUpload
 };

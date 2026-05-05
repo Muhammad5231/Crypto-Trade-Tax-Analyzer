@@ -1080,7 +1080,7 @@ function DashboardPage() {
                 <SectionCard
                   title="Report Snapshot"
                   description="A high-confidence overview of realized performance, tax pressure, open capital, and current processing state before you dive into tables."
-                  actions={<ExportMenu report={safeReport} sourceFile={activeSourceFile} processedAt={safeReport?.meta?.processedAt} buttonLabel="Export CSV" compact />}
+                  actions={<ExportMenu report={safeReport} sourceFile={activeSourceFile} processedAt={safeReport?.meta?.processedAt} buttonLabel="Exports" compact />}
                 >
                   <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                     <div

@@ -1,4 +1,5 @@
 import {
+  FileText,
   FileSpreadsheet,
   LoaderCircle,
   ShieldCheck,
@@ -8,14 +9,28 @@ import {
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { exportReportCsv } from '../services/api';
+import { exportReportCsv, exportTaxReportPdf } from '../services/api';
 import { formatCurrency } from '../utils/formatters';
 
-const CSV_EXPORT_MODE = {
-  title: 'CSV export',
-  description: 'One spreadsheet-ready file with summary totals, realized spot trades, and current open holdings.',
-  buttonLabel: 'Download CSV',
-  includes: ['Summary totals', 'Realized spot trades', 'Open holdings']
+const EXPORT_MODES = {
+  csv: {
+    title: 'Export Raw CSV',
+    description: 'Download the raw spreadsheet-friendly trade output with summary totals, realized trades, and open holdings.',
+    buttonLabel: 'Export Raw CSV',
+    loadingLabel: 'Preparing CSV...',
+    includes: ['Summary totals', 'Realized spot trades', 'Open holdings'],
+    icon: FileSpreadsheet,
+    accent: 'sky'
+  },
+  pdf: {
+    title: 'Download Tax Report (PDF)',
+    description: 'Generate a formal audit-style tax report with session summary, capital gains, TDS, and paginated realized trades.',
+    buttonLabel: 'Download Tax Report',
+    loadingLabel: 'Generating PDF...',
+    includes: ['Audit summary', 'Tax figures', 'Paginated realized trades'],
+    icon: FileText,
+    accent: 'mint'
+  }
 };
 
 function ExportSummaryStat({ label, value, helper }) {
@@ -28,21 +43,38 @@ function ExportSummaryStat({ label, value, helper }) {
   );
 }
 
-function ExportActionCard({ loading = false, disabled = false, onClick }) {
+function ExportActionCard({ mode, loading = false, disabled = false, onClick }) {
+  const exportMode = EXPORT_MODES[mode];
+  const Icon = exportMode.icon;
+  const accentClasses =
+    exportMode.accent === 'mint'
+      ? {
+          icon: 'border-mint-500/25 bg-mint-500/12 text-mint-700 dark:text-mint-100',
+          button:
+            'bg-mint-500 text-slate-900 shadow-[0_16px_40px_rgba(16,185,129,0.24)] hover:bg-mint-300 dark:bg-mint-500 dark:hover:bg-mint-300',
+          chip: 'border-mint-500/20 bg-mint-500/8 text-mint-800 dark:text-mint-200'
+        }
+      : {
+          icon: 'border-sky-500/25 bg-sky-500/12 text-sky-700 dark:text-sky-100',
+          button:
+            'bg-slate-900 text-white shadow-[0_16px_40px_rgba(15,23,42,0.24)] hover:bg-slate-800 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-300',
+          chip: 'border-sky-500/20 bg-sky-500/8 text-sky-800 dark:text-sky-200'
+        };
+
   return (
-    <div className="rounded-[24px] border border-slate-200/80 bg-white/80 p-5 shadow-soft dark:border-white/10 dark:bg-white/[0.045] dark:shadow-none">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-100">
-        <FileSpreadsheet className="h-5 w-5" />
+    <div className="rounded-[24px] border border-slate-200/80 bg-white/80 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-slate-300/90 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/[0.06]">
+      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${accentClasses.icon}`}>
+        <Icon className="h-5 w-5" />
       </div>
 
-      <h3 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{CSV_EXPORT_MODE.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{CSV_EXPORT_MODE.description}</p>
+      <h3 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{exportMode.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{exportMode.description}</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {CSV_EXPORT_MODE.includes.map((item) => (
+        {exportMode.includes.map((item) => (
           <span
             key={item}
-            className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
+            className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${accentClasses.chip}`}
           >
             {item}
           </span>
@@ -56,21 +88,23 @@ function ExportActionCard({ loading = false, disabled = false, onClick }) {
         className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${
           disabled || loading
             ? 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-500'
-            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-mint-500 dark:text-slate-900 dark:hover:bg-mint-300'
+            : accentClasses.button
         }`}
       >
         {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-        <span>{loading ? 'Preparing...' : CSV_EXPORT_MODE.buttonLabel}</span>
+        <span>{loading ? exportMode.loadingLabel : exportMode.buttonLabel}</span>
       </button>
     </div>
   );
 }
 
-function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLabel = 'Export CSV', iconOnly = false }) {
+function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLabel = 'Exports', iconOnly = false }) {
   const [open, setOpen] = useState(false);
-  const [activeExport, setActiveExport] = useState(false);
+  const [activeExport, setActiveExport] = useState(null);
   const [status, setStatus] = useState(null);
   const hasReport = Boolean(report?.summary && report?.meta);
+  const reportId = String(report?.meta?.reportId || '').trim();
+  const canExport = hasReport && Boolean(reportId);
   const summary = report?.summary || {};
   const meta = report?.meta || {};
   const tradeCount = meta.realizedTradesCount || report?.realizedTrades?.length || 0;
@@ -101,24 +135,29 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
 
   useEffect(() => {
     if (!open) {
-      setActiveExport(false);
+      setActiveExport(null);
       setStatus(null);
     }
   }, [open]);
 
-  async function handleExport() {
-    if (!hasReport || activeExport) {
+  async function handleExport(mode) {
+    if (!canExport || activeExport) {
       return;
     }
 
-    setActiveExport(true);
+    setActiveExport(mode);
     setStatus(null);
 
     try {
-      await exportReportCsv(report);
+      if (mode === 'pdf') {
+        await exportTaxReportPdf(report);
+      } else {
+        await exportReportCsv(report);
+      }
+
       setStatus({
         tone: 'success',
-        message: 'CSV export downloaded successfully.'
+        message: mode === 'pdf' ? 'Tax report downloaded successfully.' : 'Raw CSV export downloaded successfully.'
       });
     } catch (error) {
       setStatus({
@@ -126,7 +165,7 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
         message: error.message || 'Export failed. Please try again.'
       });
     } finally {
-      setActiveExport(false);
+      setActiveExport(null);
     }
   }
 
@@ -175,15 +214,15 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                               <Sparkles className="h-[18px] w-[18px]" />
                             </div>
                             <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-mint-200">
-                              CSV Export
+                              Export Center
                             </span>
                           </div>
 
                           <h2 id="export-dialog-title" className="mt-5 font-display text-[2rem] font-bold leading-[1] tracking-tight sm:text-[2.3rem]">
-                            Download your current session as CSV
+                            Export your current session
                           </h2>
                           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            Keep the export simple: one clean file for spreadsheet review, sharing, and audit-friendly handoff.
+                            Choose between a raw spreadsheet export or a formal tax report without re-uploading the session.
                           </p>
                         </div>
 
@@ -199,20 +238,21 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">
                         <ExportSummaryStat label="Source" value={sourceLabel} helper={processedLabel} />
                         <ExportSummaryStat
+                          label="Report ID"
+                          value={reportId || 'Not ready'}
+                          helper={canExport ? 'Cached session export is active' : 'Process the file again to enable exports'}
+                        />
+                        <ExportSummaryStat
                           label="Final Net"
                           value={hasReport ? formatCurrency(summary.finalNetProfit || 0) : 'Not ready'}
                           helper={hasReport ? `${tradeCount} realized trades` : 'Upload a CSV first'}
                         />
-                        <ExportSummaryStat
-                          label="CSV Scope"
-                          value={hasReport ? 'Realized + Open' : 'Locked'}
-                          helper={hasReport ? `${holdingsCount} open holdings included` : 'No report available'}
-                        />
                       </div>
                     </div>
 
-                    <div className="mt-4">
-                      <ExportActionCard disabled={!hasReport} loading={activeExport} onClick={handleExport} />
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <ExportActionCard mode="csv" disabled={!canExport} loading={activeExport === 'csv'} onClick={() => handleExport('csv')} />
+                      <ExportActionCard mode="pdf" disabled={!canExport} loading={activeExport === 'pdf'} onClick={() => handleExport('pdf')} />
                     </div>
 
                     <div className="mt-4 rounded-[24px] border border-slate-200/80 bg-white/80 px-4 py-4 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
@@ -223,7 +263,7 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                         <div>
                           <p className="font-semibold text-slate-900 dark:text-white">Export note</p>
                           <p className="mt-1">
-                            CSV is the only export format now. Charts and visual analysis stay inside the live dashboard, while the download focuses on clean spot-trade data.
+                            Raw CSV uses the cached processed session directly, and the PDF generator builds a formal audit-style report from the same cached `reportId`.
                           </p>
                         </div>
                       </div>
@@ -244,6 +284,10 @@ function ExportMenu({ report, sourceFile, processedAt, compact = false, buttonLa
                     {!hasReport ? (
                       <div className="mt-4 rounded-[22px] border border-copper-400/20 bg-copper-500/10 px-4 py-4 text-sm leading-6 text-copper-800 dark:text-copper-100">
                         Process a CSV report first. Export buttons will unlock automatically once session data is available.
+                      </div>
+                    ) : !canExport ? (
+                      <div className="mt-4 rounded-[22px] border border-copper-400/20 bg-copper-500/10 px-4 py-4 text-sm leading-6 text-copper-800 dark:text-copper-100">
+                        This saved session does not have a live `reportId`. Reprocess the CSV once to enable fast CSV and PDF exports.
                       </div>
                     ) : null}
                   </div>
