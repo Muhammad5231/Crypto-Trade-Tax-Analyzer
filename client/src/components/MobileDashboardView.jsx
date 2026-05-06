@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRightLeft,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   FileSpreadsheet,
+  Funnel,
   LayoutDashboard,
   MoonStar,
   PencilLine,
@@ -243,7 +246,17 @@ function MobileDateBlock({ label, value }) {
   );
 }
 
-function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
+function MobileTradeCard({
+  trade,
+  showBuyFee = false,
+  showSellFee = false,
+  onPrevious,
+  onNext,
+  disablePrevious = false,
+  disableNext = false,
+  activeIndex = 0,
+  totalCount = 0
+}) {
   const grossResultLabel = trade.grossResultLabel || (trade.grossProfit >= 0 ? 'WIN' : 'LOSS');
   const netResultLabel = trade.netResultLabel || trade.resultLabel || (trade.finalNetProfit >= 0 ? 'WIN' : 'LOSS');
   const grossTone = grossResultLabel === 'WIN' ? 'positive' : 'negative';
@@ -339,12 +352,52 @@ function MobileTradeCard({ trade, showBuyFee = false, showSellFee = false }) {
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">30% Tax {formatCurrency(trade.cryptoTax)}</span>
           <span className="ambient-pill rounded-full px-3 py-1.5 text-slate-600 dark:text-slate-300">Cess {formatCurrency(trade.cessAmount || 0)}</span>
         </div>
+
+        <div className="mt-5 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/8 pt-4">
+          <MobileTradeNavButton direction="previous" onClick={onPrevious} disabled={disablePrevious} compact />
+          <span className="text-center text-sm font-semibold text-slate-500 dark:text-slate-300">
+            {activeIndex + 1} / {totalCount}
+          </span>
+          <MobileTradeNavButton direction="next" onClick={onNext} disabled={disableNext} compact />
+        </div>
       </div>
     </article>
   );
 }
 
-function MobileHoldingCard({ position }) {
+function MobileTradeNavButton({ direction = 'previous', onClick, disabled = false, compact = false }) {
+  const Icon = direction === 'previous' ? ChevronLeft : ChevronRight;
+  const label = direction === 'previous' ? 'Previous' : 'Next';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-full border transition ${
+        compact ? 'h-10 w-10' : 'min-h-[2.9rem] px-4'
+      } ${
+        disabled
+          ? 'cursor-not-allowed border-white/6 bg-white/[0.03] text-slate-500'
+          : 'border-white/10 bg-white/[0.05] text-slate-100 hover:border-mint-400/35 hover:text-white'
+      }`}
+    >
+      {direction === 'previous' ? <Icon className="h-4 w-4" /> : null}
+      {compact ? null : <span className="text-sm font-semibold">{label}</span>}
+      {direction === 'next' ? <Icon className="h-4 w-4" /> : null}
+    </button>
+  );
+}
+
+function MobileHoldingCard({
+  position,
+  onPrevious,
+  onNext,
+  disablePrevious = false,
+  disableNext = false,
+  activeIndex = 0,
+  totalCount = 0
+}) {
   return (
     <article className="ambient-surface-strong relative overflow-hidden rounded-[30px] p-4">
       <div className="pointer-events-none absolute -left-6 top-0 h-20 w-20 rounded-full bg-copper-500/8 blur-3xl" />
@@ -383,6 +436,14 @@ function MobileHoldingCard({ position }) {
             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Invested Capital</p>
             <p className="mt-1 font-semibold text-slate-900 dark:text-white">{formatCurrency(position.totalInvested)}</p>
           </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/8 pt-4">
+          <MobileTradeNavButton direction="previous" onClick={onPrevious} disabled={disablePrevious} compact />
+          <span className="text-center text-sm font-semibold text-slate-500 dark:text-slate-300">
+            {activeIndex + 1} / {totalCount}
+          </span>
+          <MobileTradeNavButton direction="next" onClick={onNext} disabled={disableNext} compact />
         </div>
       </div>
     </article>
@@ -503,7 +564,6 @@ function MobileDashboardView({
   mobileMetricCards,
   mobileOverviewCards,
   mobileTradeHighlights,
-  mobileHoldingHighlights,
   tradeSearch,
   onTradeSearchChange,
   selectedTradeContract,
@@ -520,15 +580,21 @@ function MobileDashboardView({
   onSelectedOpenContractChange,
   onResetHoldingFilters,
   filteredTrades,
-  visibleMobileTrades,
-  onLoadMoreTrades,
   filteredOpenPositions,
-  visibleMobileOpenPositions,
-  onLoadMoreHoldings,
   analytics
 }) {
   const [showTradeFilters, setShowTradeFilters] = useState(false);
   const [showHoldingFilters, setShowHoldingFilters] = useState(false);
+  const [activeTradeIndex, setActiveTradeIndex] = useState(0);
+  const [tradeCardVisible, setTradeCardVisible] = useState(true);
+  const [tradeTransitionDirection, setTradeTransitionDirection] = useState(1);
+  const [activeHoldingIndex, setActiveHoldingIndex] = useState(0);
+  const [holdingCardVisible, setHoldingCardVisible] = useState(true);
+  const [holdingTransitionDirection, setHoldingTransitionDirection] = useState(1);
+  const tradeTouchStartXRef = useRef(null);
+  const tradeTransitionTimeoutRef = useRef(null);
+  const holdingTouchStartXRef = useRef(null);
+  const holdingTransitionTimeoutRef = useRef(null);
 
   const hasTradeFiltersApplied = Boolean(
     tradeSearch || selectedTradeContract !== 'ALL' || startDate || endDate
@@ -547,6 +613,27 @@ function MobileDashboardView({
     }
   }, [hasHoldingFiltersApplied]);
 
+  useEffect(() => {
+    setActiveTradeIndex(0);
+    setTradeCardVisible(true);
+  }, [filteredTrades.length, tradeSearch, selectedTradeContract, startDate, endDate]);
+
+  useEffect(() => {
+    setActiveHoldingIndex(0);
+    setHoldingCardVisible(true);
+  }, [filteredOpenPositions.length, openSearch, selectedOpenContract]);
+
+  useEffect(() => {
+    return () => {
+      if (tradeTransitionTimeoutRef.current) {
+        window.clearTimeout(tradeTransitionTimeoutRef.current);
+      }
+      if (holdingTransitionTimeoutRef.current) {
+        window.clearTimeout(holdingTransitionTimeoutRef.current);
+      }
+    };
+  }, []);
+
   function handleTabChange(nextTab) {
     onActiveMobileTabChange(nextTab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -555,15 +642,156 @@ function MobileDashboardView({
   const hasReport = Boolean(report?.summary && report?.meta);
   const isDark = theme === 'dark';
   const showMobileHeader = !hasReport || activeMobileTab === 'overview';
-  const remainingTradeCount = Math.max(0, filteredTrades.length - visibleMobileTrades.length);
   const reportFeeModel = report?.meta?.feeModel || profile;
   const showBuyFee = Number(reportFeeModel?.buyFeePercent || 0) > 0;
   const showSellFee = Number(reportFeeModel?.sellFeePercent || 0) > 0;
   const activeExchangeLabel = reportFeeModel?.exchangeName || profile?.exchangeName || 'Saved setup';
   const activeFeeSummary = `Buy ${Number(reportFeeModel?.buyFeePercent || 0)}% / Sell ${Number(reportFeeModel?.sellFeePercent || 0)}%`;
+  const activeTrade = filteredTrades[activeTradeIndex] || null;
+  const activeHolding = filteredOpenPositions[activeHoldingIndex] || null;
+  const filteredTradeFinalNet = filteredTrades.reduce(
+    (total, trade) => total + Number(trade.finalNetProfit || 0),
+    0
+  );
+  const filteredHoldingInvested = filteredOpenPositions.reduce(
+    (total, position) => total + Number(position.totalInvested || 0),
+    0
+  );
+  const tradeCardTransitionClass = tradeCardVisible
+    ? 'translate-x-0 opacity-100'
+    : tradeTransitionDirection > 0
+      ? '-translate-x-5 opacity-0'
+      : 'translate-x-5 opacity-0';
+  const holdingCardTransitionClass = holdingCardVisible
+    ? 'translate-x-0 opacity-100'
+    : holdingTransitionDirection > 0
+      ? '-translate-x-5 opacity-0'
+      : 'translate-x-5 opacity-0';
+
+  function goToTrade(nextIndex, direction) {
+    if (nextIndex < 0 || nextIndex >= filteredTrades.length || nextIndex === activeTradeIndex) {
+      return;
+    }
+
+    if (tradeTransitionTimeoutRef.current) {
+      window.clearTimeout(tradeTransitionTimeoutRef.current);
+    }
+
+    setTradeTransitionDirection(direction);
+    setTradeCardVisible(false);
+
+    tradeTransitionTimeoutRef.current = window.setTimeout(() => {
+      setActiveTradeIndex(nextIndex);
+      setTradeTransitionDirection(direction * -1);
+      setTradeCardVisible(false);
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setTradeCardVisible(true);
+        });
+      });
+    }, 170);
+  }
+
+  function handlePreviousTrade() {
+    goToTrade(activeTradeIndex - 1, -1);
+  }
+
+  function handleNextTrade() {
+    goToTrade(activeTradeIndex + 1, 1);
+  }
+
+  function goToHolding(nextIndex, direction) {
+    if (nextIndex < 0 || nextIndex >= filteredOpenPositions.length || nextIndex === activeHoldingIndex) {
+      return;
+    }
+
+    if (holdingTransitionTimeoutRef.current) {
+      window.clearTimeout(holdingTransitionTimeoutRef.current);
+    }
+
+    setHoldingTransitionDirection(direction);
+    setHoldingCardVisible(false);
+
+    holdingTransitionTimeoutRef.current = window.setTimeout(() => {
+      setActiveHoldingIndex(nextIndex);
+      setHoldingTransitionDirection(direction);
+      setHoldingCardVisible(true);
+      holdingTransitionTimeoutRef.current = null;
+    }, 160);
+  }
+
+  function handlePreviousHolding() {
+    goToHolding(activeHoldingIndex - 1, -1);
+  }
+
+  function handleNextHolding() {
+    goToHolding(activeHoldingIndex + 1, 1);
+  }
+
+  function handleTradeTouchStart(event) {
+    tradeTouchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleTradeTouchEnd(event) {
+    const startX = tradeTouchStartXRef.current;
+    const endX = event.changedTouches[0]?.clientX ?? null;
+
+    tradeTouchStartXRef.current = null;
+
+    if (startX === null || endX === null) {
+      return;
+    }
+
+    const deltaX = endX - startX;
+
+    if (Math.abs(deltaX) < 45) {
+      return;
+    }
+
+    if (deltaX < 0) {
+      handleNextTrade();
+      return;
+    }
+
+    handlePreviousTrade();
+  }
+
+  function handleHoldingTouchStart(event) {
+    holdingTouchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleHoldingTouchEnd(event) {
+    const startX = holdingTouchStartXRef.current;
+    const endX = event.changedTouches[0]?.clientX ?? null;
+    holdingTouchStartXRef.current = null;
+
+    if (startX === null || endX === null) {
+      return;
+    }
+
+    const deltaX = startX - endX;
+
+    if (Math.abs(deltaX) < 48) {
+      return;
+    }
+
+    if (deltaX < 0) {
+      handlePreviousHolding();
+      return;
+    }
+
+    handleNextHolding();
+  }
 
   return (
-    <div className="space-y-4 pb-32 lg:hidden">
+    <div
+      className={`space-y-4 lg:hidden ${
+        activeMobileTab === 'trades' || activeMobileTab === 'holdings'
+          ? 'pb-[calc(env(safe-area-inset-bottom,0px)+11rem)]'
+          : 'pb-32'
+      }`}
+    >
       {showMobileHeader ? (
       <section id="mobile-upload-panel" className="glass-panel overflow-hidden p-3">
         <div
@@ -822,60 +1050,99 @@ function MobileDashboardView({
 
           {activeMobileTab === 'trades' ? (
             <div className="space-y-4">
-              <MobileSectionCard
-                eyebrow="Trades"
-                title="Realized trade review"
-                description={`${filteredTrades.length} matched cycle${filteredTrades.length === 1 ? '' : 's'} available for mobile review.`}
-                action={
+              <section className="px-1 pt-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-white">
+                      Trades
+                    </h2>
+                    <p className="-mt-[0.45rem] text-[13px] leading-5 text-slate-600 dark:text-slate-300">
+                      Review your matched trades.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowTradeFilters((currentValue) => !currentValue)}
-                    className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-[16px] border px-3.5 py-2.5 text-sm font-semibold transition ${
                       showTradeFilters || hasTradeFiltersApplied
-                        ? 'border border-mint-500/30 bg-mint-500/10 text-mint-700 dark:text-mint-200'
-                        : 'ambient-pill text-slate-600 dark:text-slate-300'
+                        ? 'border-mint-500/30 bg-mint-500/10 text-mint-700 dark:text-mint-200'
+                        : 'border-slate-200/80 bg-white/70 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/[0.08]'
                     }`}
                   >
-                    {showTradeFilters ? 'Hide Filters' : 'Show Filters'}
+                    <Funnel className="h-4 w-4" />
+                    <span>Filters</span>
                   </button>
-                }
-              >
+                </div>
                 {showTradeFilters ? (
-                  <FilterBar
-                    search={tradeSearch}
-                    onSearchChange={onTradeSearchChange}
-                    searchPlaceholder="Search pair or date"
-                    contract={selectedTradeContract}
-                    onContractChange={onSelectedTradeContractChange}
-                    contracts={contracts}
-                    startDate={startDate}
-                    endDate={endDate}
-                    onStartDateChange={onStartDateChange}
-                    onEndDateChange={onEndDateChange}
-                    onReset={onResetTradeFilters}
-                  />
-                ) : null}
-              </MobileSectionCard>
-
-              {mobileTradeHighlights.length ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {mobileTradeHighlights.slice(0, 2).map((item) => (
-                    <MobileMetricTile
-                      key={item.label}
-                      label={item.label}
-                      value={item.value}
-                      tone={item.tone}
-                      className="min-h-[96px]"
+                  <div className="glass-panel mt-3 p-3">
+                    <FilterBar
+                      search={tradeSearch}
+                      onSearchChange={onTradeSearchChange}
+                      searchPlaceholder="Search pair or date"
+                      contract={selectedTradeContract}
+                      onContractChange={onSelectedTradeContractChange}
+                      contracts={contracts}
+                      startDate={startDate}
+                      endDate={endDate}
+                      onStartDateChange={onStartDateChange}
+                      onEndDateChange={onEndDateChange}
+                      onReset={onResetTradeFilters}
                     />
-                  ))}
+                  </div>
+                ) : null}
+              </section>
+
+              {filteredTrades.length ? (
+                <div className="ambient-surface-strong rounded-[28px] border border-white/8 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Summary
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Matched Cycles</p>
+                      <p className="mt-2 font-display text-4xl font-bold text-slate-900 dark:text-white">
+                        {filteredTrades.length}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">available for review</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Total P&amp;L (Final)</p>
+                      <p
+                        className={`mt-2 font-display text-4xl font-bold ${
+                          filteredTradeFinalNet >= 0
+                            ? 'text-mint-700 dark:text-mint-300'
+                            : 'text-coral-700 dark:text-coral-300'
+                        }`}
+                      >
+                        {formatCurrency(filteredTradeFinalNet)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : null}
 
-              {visibleMobileTrades.length ? (
+              {activeTrade ? (
                 <div className="space-y-3">
-                  {visibleMobileTrades.map((trade) => (
-                    <MobileTradeCard key={trade.id} trade={trade} showBuyFee={showBuyFee} showSellFee={showSellFee} />
-                  ))}
+                  <div
+                    className={`transform transition-all duration-200 ease-out ${tradeCardTransitionClass}`}
+                    onTouchStart={handleTradeTouchStart}
+                    onTouchEnd={handleTradeTouchEnd}
+                  >
+                    <MobileTradeCard
+                      key={activeTrade.id}
+                      trade={activeTrade}
+                      showBuyFee={showBuyFee}
+                      showSellFee={showSellFee}
+                      onPrevious={handlePreviousTrade}
+                      onNext={handleNextTrade}
+                      disablePrevious={activeTradeIndex === 0}
+                      disableNext={activeTradeIndex >= filteredTrades.length - 1}
+                      activeIndex={activeTradeIndex}
+                      totalCount={filteredTrades.length}
+                    />
+                  </div>
+
+                  <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">Swipe left or right to navigate</p>
                 </div>
               ) : (
                 <StatusBanner
@@ -884,82 +1151,95 @@ function MobileDashboardView({
                   description="Try clearing the search or widening the date range."
                 />
               )}
-
-              {filteredTrades.length > visibleMobileTrades.length ? (
-                <div className="ambient-surface flex flex-col gap-3 rounded-[24px] px-4 py-4">
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Showing <span className="font-semibold text-slate-900 dark:text-white">{visibleMobileTrades.length}</span> of{' '}
-                    <span className="font-semibold text-slate-900 dark:text-white">{filteredTrades.length}</span> trades
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onLoadMoreTrades}
-                    className="ambient-pill rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 dark:text-slate-200"
-                  >
-                    {remainingTradeCount > 8 ? 'Load 8 more' : `Load ${remainingTradeCount} more`}
-                  </button>
-                </div>
-              ) : null}
             </div>
           ) : null}
 
           {activeMobileTab === 'holdings' ? (
             <div className="space-y-4">
-              <MobileSectionCard
-                eyebrow="Holdings"
-                title="Open lot tracker"
-                description={`${filteredOpenPositions.length} remaining holding lot${filteredOpenPositions.length === 1 ? '' : 's'} still unmatched.`}
-                action={
+              <section className="px-1 pt-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-white">
+                      Holdings
+                    </h2>
+                    <p className="mt-1 text-[13px] leading-5 text-slate-600 dark:text-slate-300">
+                      Review your open lots one card at a time.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowHoldingFilters((currentValue) => !currentValue)}
-                    className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-[16px] border px-3.5 py-2.5 text-sm font-semibold transition ${
                       showHoldingFilters || hasHoldingFiltersApplied
-                        ? 'border border-mint-500/30 bg-mint-500/10 text-mint-700 dark:text-mint-200'
-                        : 'ambient-pill text-slate-600 dark:text-slate-300'
+                        ? 'border-mint-500/30 bg-mint-500/10 text-mint-700 dark:text-mint-200'
+                        : 'border-slate-200/80 bg-white/70 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/[0.08]'
                     }`}
                   >
-                    {showHoldingFilters ? 'Hide Filters' : 'Show Filters'}
+                    <Funnel className="h-4 w-4" />
+                    <span>Filters</span>
                   </button>
-                }
-              >
+                </div>
                 {showHoldingFilters ? (
-                  <FilterBar
-                    search={openSearch}
-                    onSearchChange={onOpenSearchChange}
-                    searchPlaceholder="Search pair or buy date"
-                    contract={selectedOpenContract}
-                    onContractChange={onSelectedOpenContractChange}
-                    contracts={contracts}
-                    startDate=""
-                    endDate=""
-                    showDateFilters={false}
-                    onReset={onResetHoldingFilters}
-                  />
-                ) : null}
-              </MobileSectionCard>
-
-              {mobileHoldingHighlights.length ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {mobileHoldingHighlights.map((item, index) => (
-                    <MobileMetricTile
-                      key={item.label}
-                      label={item.label}
-                      value={item.value}
-                      tone={item.tone}
-                      className={`min-h-[96px] ${
-                        mobileHoldingHighlights.length % 2 === 1 && index === mobileHoldingHighlights.length - 1 ? 'col-span-2' : ''
-                      }`}
+                  <div className="glass-panel mt-3 p-3">
+                    <FilterBar
+                      search={openSearch}
+                      onSearchChange={onOpenSearchChange}
+                      searchPlaceholder="Search pair or buy date"
+                      contract={selectedOpenContract}
+                      onContractChange={onSelectedOpenContractChange}
+                      contracts={contracts}
+                      startDate=""
+                      endDate=""
+                      showDateFilters={false}
+                      onReset={onResetHoldingFilters}
                     />
-                  ))}
+                  </div>
+                ) : null}
+              </section>
+
+              {filteredOpenPositions.length ? (
+                <div className="ambient-surface-strong rounded-[28px] border border-white/8 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Summary
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Open Lots</p>
+                      <p className="mt-2 font-display text-4xl font-bold text-slate-900 dark:text-white">
+                        {filteredOpenPositions.length}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">available for review</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Total Invested</p>
+                      <p className="mt-2 font-display text-4xl font-bold text-slate-900 dark:text-white">
+                        {formatCurrency(filteredHoldingInvested)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : null}
 
-              {visibleMobileOpenPositions.length ? (
+              {activeHolding ? (
                 <div className="space-y-3">
-                  {visibleMobileOpenPositions.map((position) => (
-                    <MobileHoldingCard key={position.id} position={position} />
-                  ))}
+                  <div
+                    className={`transform transition-all duration-200 ease-out ${holdingCardTransitionClass}`}
+                    onTouchStart={handleHoldingTouchStart}
+                    onTouchEnd={handleHoldingTouchEnd}
+                  >
+                    <MobileHoldingCard
+                      key={activeHolding.id}
+                      position={activeHolding}
+                      onPrevious={handlePreviousHolding}
+                      onNext={handleNextHolding}
+                      disablePrevious={activeHoldingIndex === 0}
+                      disableNext={activeHoldingIndex >= filteredOpenPositions.length - 1}
+                      activeIndex={activeHoldingIndex}
+                      totalCount={filteredOpenPositions.length}
+                    />
+                  </div>
+
+                  <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">Swipe left or right to navigate</p>
                 </div>
               ) : (
                 <StatusBanner
@@ -968,16 +1248,6 @@ function MobileDashboardView({
                   description="All buys may already be matched, or the pair search has narrowed the list."
                 />
               )}
-
-              {filteredOpenPositions.length > visibleMobileOpenPositions.length ? (
-                <button
-                  type="button"
-                  onClick={onLoadMoreHoldings}
-                  className="ambient-pill w-full rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-mint-500 hover:text-slate-900 dark:text-slate-200"
-                >
-                  Load more holdings
-                </button>
-              ) : null}
             </div>
           ) : null}
 
